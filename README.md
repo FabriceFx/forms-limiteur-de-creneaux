@@ -41,6 +41,21 @@ Deux parades, et il faut les deux :
   disparaît du formulaire alors qu'il reste encore une place en réserve ;
 - le **verdict**, qui dit la vérité même quand l'affichage a menti.
 
+### Quand tout est complet, le risque disparaît
+
+Nuance apprise à l'essai, et elle est rassurante : lorsque **tous** les créneaux
+sont pleins, le formulaire se ferme — et une page restée ouverte ne peut alors
+plus rien envoyer du tout. La fermeture est une protection totale, là où le
+retrait d'une option n'en est pas une.
+
+La surréservation n'est donc possible que dans la situation intermédiaire :
+certains créneaux complets, d'autres encore ouverts, donc un formulaire qui
+accepte toujours des réponses. C'est exactement là que la marge sert, et nulle
+part ailleurs.
+
+Corollaire pour qui veut l'éprouver : il faut garder au moins un créneau ouvert,
+sans quoi le formulaire se ferme et il n'y a plus rien à observer.
+
 ## Le référentiel fait foi, le formulaire n'en est que le reflet
 
 Une option retirée d'un formulaire n'y existe plus du tout. Si la liste des
@@ -417,15 +432,17 @@ en cellule ressort en objet `Date`, le fuseau du script vaut celui du classeur,
 `asListItem()` lève sur un autre type, `hasOtherOption` n'existe pas sur une
 liste, et les énumérations citées existent bien.
 
-**Deux points restent ouverts**, et aucun ne se mesure par l'API :
+**Le déclencheur part bien après l'écriture de la ligne** — vérifié par de vraies
+soumissions : le Journal s'est alimenté tout seul, avec le bon créneau et le bon
+rang. `forSpreadsheet` plutôt que `forForm` était donc le bon choix. C'est aussi
+ce qui fait du Journal le témoin exclusif du déclencheur : la synchronisation
+lancée depuis le menu n'y écrit jamais, donc un Journal vide alors que tout
+semble marcher signifie que rien ne se fait tout seul.
 
-- **le déclencheur part-il après l'écriture de la ligne ?** C'est la raison du
-  choix `forSpreadsheet` plutôt que `forForm`. Un formulaire qui collecte les
-  adresses refuse les réponses construites par script : la mesure demande une
-  soumission à la main, puis de regarder si le Journal s'alimente ;
-- **la largeur réelle de la fenêtre de surréservation**, qui déterminera la
-  marge à recommander par défaut. Elle se mesure en gardant un formulaire ouvert
-  dans une fenêtre privée pendant qu'on remplit le créneau ailleurs.
+**Un seul point reste ouvert : la largeur réelle de la fenêtre de
+surréservation**, qui déterminera la marge à recommander par défaut. Elle ne se
+mesure qu'en gardant un formulaire ouvert dans une fenêtre privée pendant qu'on
+remplit le créneau ailleurs — c'est l'étape 1 du protocole d'essai.
 
 Non traité, et assumé : les grilles, et les formulaires à plusieurs questions de
 créneaux. Les uns comme les autres demandent une autre façon de compter.
@@ -465,6 +482,20 @@ Two safeguards work together:
 
 - the **margin**, which removes the option before the last spot is taken — with a margin of 1, the slot disappears from the form while one buffer spot remains;
 - the **verdict**, which enforces reality even when the display lagged behind.
+
+### When all slots are full, the risk disappears
+
+A reassuring nuance learned through live testing: when **all** slots are full,
+the form closes itself — and a page left open in a browser can no longer submit
+anything at all. Form closure is a complete safeguard, whereas removing an
+option is not.
+
+Overbooking is therefore only possible in the intermediate situation: some
+slots full, others still open, meaning the form still accepts submissions. This
+is precisely where the margin comes into play, and nowhere else.
+
+A corollary for testing: keep at least one slot open, otherwise the form closes
+and there is nothing left to observe.
 
 ## The spreadsheet is the source of truth, the form is merely its reflection
 
@@ -708,7 +739,8 @@ It also verifies what mock services can only assume: date strings returning as `
 ## Known limitations and roadmap
 
 - **Field-tested on 18 September 2026: ten hypotheses confirmed, none refuted.** Notably `setChoiceValues` does erase section navigation — so refusing to drive such a question is justified — a choice question does reject an empty option list, and `getFormUrl()` does return `null` on an unlinked sheet.
-- **Still open, neither measurable through the API:** whether the submission trigger fires after the row is written (a form collecting email addresses rejects script-built responses, so this needs a manual submission), and the real width of the oversubscription window, which will set the default margin.
+- **The submission trigger does fire after the row is written** — verified with real submissions: the Journal filled itself with the right slot and rank, so `forSpreadsheet` was the right choice. This also makes the Journal the trigger's only witness: a menu-driven sync never writes to it.
+- **Still open:** the real width of the oversubscription window, which will set the default margin.
 - Grids and multi-question forms are intentionally unsupported (they require different counting models).
 - Very large response sheets are read in full on every submission (fine for hundreds of rows; thousands would warrant paginated or delta counting).
 

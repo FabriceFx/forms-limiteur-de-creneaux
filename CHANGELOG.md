@@ -3,6 +3,54 @@
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [0.8.2] - 2026-09-18
+
+**La fermeture automatique est vérifiée**, et elle apprend quelque chose sur le
+risque que cet outil combat. Le code ne change pas.
+
+### Vérifié
+
+- **Le formulaire se ferme tout seul quand tous les créneaux sont complets**,
+  avec son message de clôture. Constaté en conditions réelles.
+
+### Su et dit
+
+- **Quand tout est complet, le risque de surréservation disparaît.** Un
+  formulaire fermé refuse toutes les réponses, y compris celles des pages
+  restées ouvertes : la fermeture est une protection totale, là où le retrait
+  d'une option n'en est pas une. La surréservation n'est donc possible que
+  dans la situation intermédiaire — certains créneaux pleins, d'autres encore
+  ouverts —, et c'est exactement là que la marge sert.
+- Corollaire pour l'essai : éprouver la surréservation demande de garder au
+  moins un créneau ouvert, sans quoi il n'y a plus rien à observer.
+- Le banc reste à **190 assertions** et l'épreuve à **trente-cinq défauts**.
+
+## [0.8.1] - 2026-09-18
+
+**Le déclencheur est vérifié.** Le code ne change pas ; ce qui change, c'est
+ce qu'on en sait.
+
+### Vérifié
+
+- **Le déclencheur de soumission part bien après l'écriture de la ligne.** De
+  vraies réponses ont alimenté le Journal toutes seules, avec le bon créneau et
+  le bon rang — `forSpreadsheet` plutôt que `forForm` était le bon choix. Le
+  dernier point technique ouvert depuis la première version est refermé.
+- **Le Journal est le témoin exclusif du déclencheur.** `limiteurSynchroniser_`
+  — ce que lance le menu — n'y écrit jamais : un Journal vide alors que les
+  créneaux se retirent correctement signifie que rien ne se fait tout seul, et
+  que quelqu'un lance la synchronisation à la main. Sans cette asymétrie, les
+  deux situations seraient indiscernables.
+
+### Su et dit
+
+- **La fenêtre de surréservation reste inconnue** : c'est le seul point encore
+  ouvert, et il ne se mesure qu'avec deux fenêtres de navigateur.
+- Les réponses antérieures à l'installation ne figurent pas au Journal — le
+  déclencheur n'existait pas quand elles sont arrivées. Elles sont comptées
+  malgré tout : le comptage lit la feuille, pas le Journal.
+- Le banc reste à **190 assertions** et l'épreuve à **trente-cinq défauts**.
+
 ## [0.8.0] - 2026-09-18
 
 **Éprouvée en conditions réelles.** Dix hypothèses confirmées, **aucune
