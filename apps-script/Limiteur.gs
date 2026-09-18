@@ -25,7 +25,7 @@
  * retenues et celles en dépassement — c'est dit dans l'onglet d'aide.
  */
 
-const LIMITEUR_VERSION_ = '0.3.0';
+const LIMITEUR_VERSION_ = '0.7.0';
 
 const LIMITEUR_ONGLET_CRENEAUX_ = 'Créneaux';
 const LIMITEUR_ONGLET_JOURNAL_ = 'Journal';
@@ -36,7 +36,7 @@ const LIMITEUR_COLONNES_CRENEAUX_ = ['Créneau', 'Places', 'Marge', 'Pris', 'Res
   'État', 'Dernier comptage'];
 
 const LIMITEUR_COLONNES_JOURNAL_ = ['Horodatage', 'Ligne', 'Créneau', 'Rang', 'Places',
-  'Verdict', 'Destinataire', 'Courriel'];
+  'Verdict', 'Destinataire', 'Courriel', 'Ce qui a échoué'];
 
 /**
  * Les états d'un créneau.
@@ -57,12 +57,17 @@ const LIMITEUR_VERDICTS_ = {
   surreservation: 'Surréservation',
   horsReferentiel: 'Hors référentiel',
   sansCapacite: 'Sans capacité',
+  echec: 'Échec',
 };
 
 const LIMITEUR_REGLAGES_PAR_DEFAUT_ = {
   'Question des créneaux (titre exact)': '',
   'Colonne du créneau dans les réponses': '',
   'Colonne de l’adresse e-mail': 'Adresse e-mail',
+  // Vide : toutes les colonnes des réponses sauf l'horodatage et le créneau.
+  // On ne sait pas quelles questions le formulaire pose, et deviner laquelle
+  // porte l'identité reviendrait à en perdre une.
+  'Colonnes à reprendre dans les listes': '',
   'Envoyer une confirmation': 'Non',
   'Objet de la confirmation': 'Votre créneau est confirmé',
   'Destinataire des alertes': '',

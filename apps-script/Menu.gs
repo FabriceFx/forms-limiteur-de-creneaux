@@ -19,6 +19,8 @@ function onOpen() {
     .createMenu('Créneaux')
     .addItem('Recompter et mettre à jour le formulaire', 'synchroniserLesCreneaux')
     .addItem('Où en sont les créneaux ?', 'afficherLEtatDesCreneaux')
+    .addItem('Vérifier mon installation', 'verifierMonInstallation')
+    .addItem('Établir les listes', 'etablirLesListes')
     .addSeparator()
     .addItem('Voir un exemple', 'voirUnExemple')
     .addItem('Retirer l’exemple', 'retirerLExemple')
@@ -28,16 +30,26 @@ function onOpen() {
     .addToUi();
 }
 
-/** Cible du déclencheur installable de soumission. */
+/**
+ * Cible du déclencheur installable de soumission.
+ *
+ * Elle ne fait plus rien elle-même : tout passe par le filet, qui capture,
+ * consigne et prévient. Un déclencheur qui lève cesse de s'exécuter sans que
+ * rien dans le classeur ne le dise — et le limiteur cesse alors de limiter.
+ */
 function surSoumissionDuFormulaire(e) {
   const ligne = (e && e.range) ? e.range.getRow() : null;
-  const resultat = SocleExecution.sousVerrou(() => limiteurTraiterLaSoumission_(ligne));
+  const resultat = limiteurSousFilet_(ligne);
 
-  if (!resultat.pris) {
+  if (resultat.occupe) {
     // Une autre soumission tient le verrou. La sienne recomptera tout, y
     // compris cette ligne-ci : il n'y a rien à reprendre, et réessayer ne
     // ferait qu'empiler des exécutions sur un travail déjà fait.
     console.log(`Soumission ligne ${ligne} : ${resultat.message}`);
+    return;
+  }
+  if (resultat.echec) {
+    console.log(`Soumission ligne ${ligne} — échec consigné : ${resultat.quoi}`);
     return;
   }
   console.log(`Soumission ligne ${ligne} traitée : `
@@ -144,6 +156,70 @@ function retirerLExemple() {
     interface_.ButtonSet.OK);
 }
 
+/**
+ * Passe l'installation en revue avant que de vrais répondants ne s'en chargent.
+ *
+ * Ne modifie rien, hors l'onglet du rapport : le diagnostic se lance sur une
+ * campagne en cours.
+ */
+function verifierMonInstallation() {
+  const interface_ = SpreadsheetApp.getUi();
+  const resultat = SocleExecution.sousVerrou(() => {
+    const bilan = limiteurVerifierLInstallation_();
+    limiteurEcrireLaVerification_(bilan.controles);
+    return bilan;
+  });
+
+  if (!resultat.pris) {
+    interface_.alert('Créneaux', resultat.message, interface_.ButtonSet.OK);
+    return;
+  }
+  interface_.alert('Vérification de l’installation',
+    limiteurResumerLaVerification_(resultat.valeur), interface_.ButtonSet.OK);
+}
+
+/**
+ * Établit les listes par créneau : ce qu'on emporte le jour de la visite.
+ *
+ * Ne pilote rien — c'est une lecture. Le formulaire n'est même pas ouvert si le
+ * réglage dit déjà quelle colonne des réponses porte le créneau.
+ */
+function etablirLesListes() {
+  const interface_ = SpreadsheetApp.getUi();
+  const resultat = SocleExecution.sousVerrou(() => {
+    const bilan = limiteurEtablirLesListes_();
+    limiteurEcrireLesListes_(bilan);
+    return bilan;
+  });
+
+  if (!resultat.pris) {
+    interface_.alert('Créneaux', resultat.message, interface_.ButtonSet.OK);
+    return;
+  }
+  const { resume, reprises } = resultat.valeur;
+  const lignes = [
+    `${resume.retenues} personne(s) retenue(s), ${resume.attentes} en liste `
+      + `d'attente, sur ${resume.creneaux} créneau(x).`,
+  ];
+  if (resume.sansInscription > 0) {
+    lignes.push(`${resume.sansInscription} créneau(x) sans aucune inscription.`);
+  }
+  // Ce qu'on ne verrait pas autrement, et qui se découvrirait devant la personne.
+  if (resume.horsReferentiel > 0) {
+    lignes.push('', `Attention : ${resume.horsReferentiel} inscription(s) portent un `
+      + 'créneau inconnu du référentiel. Elles figurent en fin de liste, statut '
+      + '« Hors référentiel » : ces personnes se sont inscrites et ne sont comptées '
+      + 'nulle part.');
+  }
+  lignes.push('', reprises.length === 0
+    ? 'Aucune colonne de réponse reprise : le formulaire ne pose pas d’autre question.'
+    : `Colonnes reprises : ${reprises.join(', ')}.`,
+    'Pour en choisir d’autres, renseignez le réglage « Colonnes à reprendre dans '
+    + 'les listes ».');
+  lignes.push('', `Les listes sont dans l'onglet « ${LIMITEUR_ONGLET_LISTES_} ».`);
+  interface_.alert('Listes par créneau', lignes.join('\n'), interface_.ButtonSet.OK);
+}
+
 /** La version qui tourne vraiment — un déploiement sert une copie figée du code. */
 function aProposDuLimiteur() {
   const interface_ = SpreadsheetApp.getUi();
@@ -162,6 +238,38 @@ function aProposDuLimiteur() {
 // ---------------------------------------------------------------------------
 // Mise en mots — un chiffre s'accompagne toujours de ce qui le produit.
 // ---------------------------------------------------------------------------
+
+/**
+ * Le résumé du diagnostic.
+ *
+ * Les bloquants d'abord, puis ce qui n'a pas pu être mesuré — c'est ce dernier
+ * point qu'on oublie de lire, et c'est celui qui cache les surprises.
+ */
+const limiteurResumerLaVerification_ = (bilan) => {
+  const { resume, controles } = bilan;
+  const lignes = [`${controles.length} contrôles : ${resume.bon} bon(s), `
+    + `${resume.aVerifier} à vérifier, ${resume.bloquant} bloquant(s), `
+    + `${resume.nonMesure} non mesuré(s).`];
+
+  const nommer = (etat) => controles.filter((un) => un.etat === etat)
+    .map((un) => `• ${un.nom} — ${un.constat || un.quoiFaire}`);
+
+  if (resume.bloquant > 0) {
+    lignes.push('', 'Bloquant :', ...nommer(LIMITEUR_CONTROLES_.bloquant));
+  }
+  if (resume.aVerifier > 0) {
+    lignes.push('', 'À vérifier :', ...nommer(LIMITEUR_CONTROLES_.aVerifier));
+  }
+  // « Non mesuré » ne veut pas dire « rien trouvé » : le dire, sans quoi un
+  // rapport à moitié aveugle passerait pour un rapport rassurant.
+  if (resume.nonMesure > 0) {
+    lignes.push('', 'Non mesuré — ces points n’ont pas pu être vérifiés :',
+      ...nommer(LIMITEUR_CONTROLES_.nonMesure));
+  }
+  lignes.push('', `Le détail, avec quoi faire, est dans l’onglet `
+    + `« ${LIMITEUR_ONGLET_VERIFICATION_} ».`);
+  return lignes.join('\n');
+};
 
 /** Le résumé d'une synchronisation, en quelques lignes. */
 const limiteurResumer_ = (bilan) => {

@@ -19,9 +19,13 @@ const RACINE = path.join(__dirname, '..');
 const DOSSIER = path.join(RACINE, 'apps-script');
 const FICHIERS = ['SocleDates.gs', 'SocleTexte.gs', 'SocleFeuilles.gs', 'SocleErreurs.gs',
   'SocleExecution.gs', 'SocleCourriel.gs', 'Limiteur.gs', 'Formulaire.gs',
-  'Synchronisation.gs', 'Demonstration.gs', 'Installation.gs', 'Menu.gs'];
+  'Synchronisation.gs', 'Demonstration.gs', 'Installation.gs', 'Verification.gs',
+  'Listes.gs', 'Apparence.gs', 'Menu.gs'];
 
-const SECTIONS_ATTENDUES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'L', 'K'];
+// 'K' en dernier : sa vérification du total se compte elle-même, et ne peut
+// donc pas être suivie d'autres assertions.
+const SECTIONS_ATTENDUES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+  'L', 'M', 'N', 'O', 'P', 'K'];
 
 let passes = 0;
 const echecs = [];
@@ -52,12 +56,19 @@ const monter = (options = {}) => {
     static now() { return horloge.ms; }
   }
 
+  // Un onglet protégé par un administrateur : le vrai service laisse lire et
+  // refuse d'écrire, avec ce message. Modifiable après coup, pour qu'une
+  // installation puisse réussir avant que la panne ne survienne.
+  const panne = { onglet: options.ongletEnPanne || null };
+
   const feuilles = {};
   class FausseFeuille {
     constructor(nom, urlFormulaire) {
       this.nom = nom;
       this.cellules = [];
       this.validations = {};
+      this.notes = {};
+      this.regles = [];
       this.urlFormulaire = urlFormulaire || null;
     }
     getName() { return this.nom; }
@@ -73,7 +84,21 @@ const monter = (options = {}) => {
       }
       const f = this;
       return {
+        getColumn: () => c,
+        getRow: () => l,
+        getNumColumns: () => w,
+        getNumRows: () => h,
+        setNote(texte) {
+          for (let i = 0; i < h; i += 1) f.notes[`${l + i}:${c}`] = texte;
+          return this;
+        },
+        getNote: () => f.notes[`${l}:${c}`] || '',
         setValues(v) {
+          if (panne.onglet === f.nom) {
+            throw new Error('You are trying to edit a protected cell or object. '
+              + 'Please contact the spreadsheet owner to remove protection if you '
+              + 'need to edit.');
+          }
           if (v.length !== h) throw new Error('The number of rows in the data does not match.');
           v.forEach((r, i) => {
             const cible = l + i - 1;
@@ -107,7 +132,9 @@ const monter = (options = {}) => {
         },
       };
     }
-    clear() { this.cellules = []; return this; }
+    clear() { this.cellules = []; this.notes = {}; this.regles = []; return this; }
+    getConditionalFormatRules() { return this.regles.slice(); }
+    setConditionalFormatRules(regles) { this.regles = regles.slice(); return this; }
     setFrozenRows() { return this; }
     setColumnWidth() { return this; }
     activate() { return this; }
@@ -288,6 +315,28 @@ const monter = (options = {}) => {
           return menu;
         },
       }),
+      newConditionalFormatRule: () => {
+        const regle = { valeur: null, fond: null, texte: null, plages: [] };
+        const bati = {
+          whenTextEqualTo(v) { regle.valeur = v; return bati; },
+          setBackground(c) { regle.fond = c; return bati; },
+          setFontColor(c) { regle.texte = c; return bati; },
+          setRanges(p) { regle.plages = p; return bati; },
+          build() {
+            // Le vrai service refuse une règle sans plage, avec ce message.
+            if (regle.plages.length === 0) {
+              throw new Error('The conditional format rule must contain at least one range.');
+            }
+            return {
+              getRanges: () => regle.plages,
+              valeur: regle.valeur,
+              fond: regle.fond,
+              texte: regle.texte,
+            };
+          },
+        };
+        return bati;
+      },
       newDataValidation: () => {
         const regle = { valeurs: null, bloquant: null, min: null, max: null, aide: '' };
         const bati = {
@@ -374,7 +423,7 @@ const monter = (options = {}) => {
     fs.readFileSync(path.join(DOSSIER, n), 'utf8'), sandbox, { filename: n }));
 
   return {
-    sandbox, classeur, feuilles, appels, formulaire, elements, horloge, quota,
+    sandbox, classeur, feuilles, appels, formulaire, elements, horloge, quota, panne,
     nomReponses: NOM_REPONSES,
     lire: (e) => vm.runInContext(e, sandbox),
   };
@@ -454,6 +503,58 @@ section('A. Intégrité du projet');
       });
   });
   egal(collisions, [], 'aucun nom global déclaré dans deux fichiers');
+
+  // Apps Script charge les fichiers dans l'ordre de l'éditeur, **alphabétique
+  // par défaut**. Une constante globale évaluée au chargement et qui en
+  // référence une autre, déclarée dans un fichier venant après, fait échouer le
+  // projet ENTIER : toutes ses fonctions deviennent introuvables d'un coup, y
+  // compris celles qui n'ont rien à voir. Le banc, lui, charge dans un ordre
+  // choisi — il ne verrait donc jamais le défaut.
+  {
+    const bac = {
+      JSON, Math, Number, String, Object, Array, Boolean, RegExp, Error, Intl,
+      Map, Set, Date, console: { log: () => {}, warn: () => {}, error: () => {} },
+    };
+    bac.globalThis = bac;
+    vm.createContext(bac);
+    let echec = '';
+    try {
+      sources.slice().sort().forEach((nom) => vm.runInContext(
+        fs.readFileSync(path.join(DOSSIER, nom), 'utf8'), bac, { filename: nom }));
+    } catch (erreur) {
+      echec = String(erreur.message || erreur);
+    }
+    egal(echec, '', 'le projet se charge dans l’ordre alphabétique — une table '
+      + 'constante qui nomme une constante déclarée plus loin doit devenir une '
+      + 'fonction, évaluée à l’appel');
+  }
+
+
+  // `outils/Controle.gs` ne tourne que dans Google : aucun test ne le charge,
+  // et sa syntaxe seule est vérifiée par le préparateur. Mais il appelle des
+  // fonctions internes du produit, et en renommer une le casserait sans que
+  // rien ne le dise — jusqu'à l'essai réel, c'est-à-dire au pire moment.
+  {
+    const controle = fs.readFileSync(path.join(RACINE, 'outils', 'Controle.gs'), 'utf8');
+    const siennes = new Set([...controle.matchAll(
+      /^(?:const|function)\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]));
+
+    const declarees = new Set();
+    sources.forEach((nom) => {
+      [...fs.readFileSync(path.join(DOSSIER, nom), 'utf8')
+        .matchAll(/^(?:const|function)\s+([A-Za-z_$][\w$]*)/gm)]
+        .forEach((m) => declarees.add(m[1]));
+    });
+
+    const citees = [...new Set([...controle.matchAll(
+      /\b(limiteur[A-Z][A-Za-z0-9_$]*|LIMITEUR_[A-Z0-9_]+|Socle[A-Z][A-Za-z0-9_$]*)/g)]
+      .map((m) => m[1]))];
+    const introuvables = citees.filter((nom) => !declarees.has(nom) && !siennes.has(nom));
+    egal(introuvables, [],
+      'chaque nom du produit que cite outils/Controle.gs est déclaré dans '
+      + 'apps-script/ — sinon le contrôle en conditions réelles échouerait sur un '
+      + 'nom mort, le jour même où l’on compte sur lui');
+  }
 
   const declaree = fs.readFileSync(path.join(RACINE, 'VERSION'), 'utf8').trim();
   const dansLeCode = /const LIMITEUR_VERSION_ = '([^']+)'/.exec(
@@ -975,6 +1076,480 @@ section('L. La démonstration montre ce que l’outil fait vraiment');
     'le relancer sur un classeur sans exemple ne fait rien, et ne lève pas');
 }
 
+section('M. Le déclencheur ne meurt pas, et ne meurt pas en silence');
+{
+  const ECHOUE = 'Ce qui a échoué';
+
+  /** Un classeur installé où le formulaire vient de devenir impilotable. */
+  const casse_ = (options = {}) => {
+    const c = prepare_({
+      capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 2]],
+      ...options,
+    });
+    // Quelqu'un ajoute un saut de section à une option : la synchronisation
+    // refuse désormais d'y toucher, et tout ce qui l'appelle lève.
+    c.elements[0].choix[0].navigation = 'GO_TO_PAGE';
+    c.feuilles[c.nomReponses].getRange(2, 1, 1, 3)
+      .setValues([['2026-09-18 09:10', 'a@exemple.org', 'Mardi 14 h']]);
+    return c;
+  };
+
+  const c = casse_();
+  leve(() => c.lire('limiteurSynchroniser_()'), /saut de section/,
+    'la synchronisation lève bien : c’est la situation qu’on veut survivre');
+
+  // Sans filet, l'exécution s'arrêtait là — et avec elle le limiteur.
+  let leveEncore = false;
+  try {
+    c.lire('surSoumissionDuFormulaire({ range: { getRow: () => 2 } })');
+  } catch (erreur) { leveEncore = true; }
+  verifier(!leveEncore,
+    'le déclencheur, lui, ne lève plus : sans cela Google l’arrête et les créneaux '
+    + 'complets restent affichés, soumission après soumission');
+
+  const derniere = lignesDe(c, 'Journal').pop();
+  egal(derniere.Verdict, 'Échec', 'l’échec est consigné au Journal');
+  verifier(/saut de section/.test(String(derniere[ECHOUE])),
+    'avec ce qui ne va pas');
+  verifier(/Retirez la navigation/.test(String(derniere[ECHOUE])),
+    'et surtout quoi faire — le refus portait déjà son remède, on le transmet');
+  egal(derniere.Ligne, 2, 'et la ligne concernée');
+
+  // Personne ne lit un journal qu'il ne sait pas devoir ouvrir.
+  const d = casse_();
+  d.lire("SocleFeuilles.ecrireReglage('Réglages', 'Destinataire des alertes', 'chef@exemple.org')");
+  d.lire('surSoumissionDuFormulaire({ range: { getRow: () => 2 } })');
+  const alerte = d.appels.courriels.find((m) => m.to === 'chef@exemple.org');
+  verifier(!!alerte, 'et quelqu’un est prévenu');
+  verifier(/Retirez la navigation/.test(alerte.body),
+    'le message dit quoi faire, pas seulement que ça a raté');
+  verifier(/plus retirés du formulaire|saut de section/.test(alerte.body),
+    'et de quoi il retourne');
+
+  // Même cause, même clé : on agrège par cause et non par victime. Une campagne
+  // dont chaque soumission échoue pour la même raison produit une alerte.
+  d.appels.courriels.length = 0;
+  d.lire('surSoumissionDuFormulaire({ range: { getRow: () => 2 } })');
+  egal(d.appels.courriels.length, 0,
+    'la même cause ne repart pas : trois cents soumissions en échec font une '
+    + 'alerte, pas trois cents');
+
+  // Sans réglage, le déclencheur s'exécute sous l'identité de qui l'a posé :
+  // c'est cette personne qu'il faut prévenir, sans quoi l'échec reste muet.
+  const e = casse_();
+  e.lire('surSoumissionDuFormulaire({ range: { getRow: () => 2 } })');
+  egal(e.appels.courriels.length, 1, 'sans destinataire réglé, l’alerte part quand même');
+  egal(e.appels.courriels[0].to, 'moi@exemple.org',
+    'à la personne qui a posé le déclencheur, faute de quoi rien ne serait dit');
+
+  // Une erreur qui ne vient pas de nous ne porte pas de remède : il faut lui en
+  // donner un, sinon le message laisse son lecteur devant un constat.
+  const f = prepare_({ capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 2]] });
+  f.feuilles[f.nomReponses].getRange(1, 3).setValue('Intitulé changé à la main');
+  f.feuilles[f.nomReponses].getRange(2, 1, 1, 3)
+    .setValues([['2026-09-18 09:10', 'a@exemple.org', 'Mardi 14 h']]);
+  f.lire('surSoumissionDuFormulaire({ range: { getRow: () => 2 } })');
+  const brute = lignesDe(f, 'Journal').pop();
+  egal(brute.Verdict, 'Échec', 'une erreur inattendue est consignée comme les autres');
+  verifier(/Recompter et mettre à jour/.test(String(brute[ECHOUE])),
+    'avec un remède par défaut, puisqu’elle n’en portait pas');
+
+  // Le filet ne doit pas devenir lui-même la cause d'un échec.
+  const g = casse_();
+  g.panne.onglet = 'Journal';
+  let leveSurJournal = false;
+  try {
+    g.lire('surSoumissionDuFormulaire({ range: { getRow: () => 2 } })');
+  } catch (erreur) { leveSurJournal = true; }
+  verifier(!leveSurJournal,
+    'un Journal protégé n’empêche pas le filet de tenir : il aurait remplacé '
+    + 'l’erreur d’origine par une autre, moins parlante');
+  egal(g.appels.courriels.length, 1,
+    'et l’alerte part quand même — c’est elle qui reste quand le Journal ne '
+    + 'peut plus rien garder');
+
+  // Un verrou occupé n'est pas un échec : l'exécution qui le détient recomptera
+  // tout, cette ligne comprise.
+  const h = prepare_({ capacites: [['Mardi 14 h', 2]] });
+  h.lire('LockService.getDocumentLock().tryLock(0)');
+  const occupe = h.lire('limiteurSousFilet_(2)');
+  egal([occupe.fait, !!occupe.echec, !!occupe.occupe], [false, false, true],
+    'verrou occupé : ni traité, ni en échec — rien à signaler à personne');
+  egal(lignesDe(h, 'Journal').length, 0, 'et rien n’est écrit au Journal');
+}
+
+section('N. Le diagnostic dit ce qu’il sait, et avoue ce qu’il ignore');
+{
+  const etatDe = (bilan, nom) => {
+    const trouve = bilan.controles.find((un) => un.nom === nom);
+    return trouve ? trouve.etat : `(contrôle « ${nom} » absent)`;
+  };
+  const texteDe = (bilan, nom) => {
+    const trouve = bilan.controles.find((un) => un.nom === nom);
+    return trouve ? `${trouve.constat} ${trouve.quoiFaire}` : '';
+  };
+
+  const sain_ = (options = {}) => prepare_({
+    capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 3]],
+    ...options,
+  });
+
+  const c = sain_();
+  const bilan = c.lire('limiteurVerifierLInstallation_()');
+  egal([bilan.resume.bloquant, bilan.resume.nonMesure], [0, 0],
+    'une installation saine ne présente ni blocage ni point non mesuré');
+  verifier(bilan.controles.length >= 10,
+    `${bilan.controles.length} contrôles passés`);
+
+  // Le diagnostic se lance sur une campagne en cours : il ne doit rien changer.
+  const revisions = c.elements[0].revisions;
+  const choix = c.elements[0].choix.map((x) => x.valeur);
+  c.lire('limiteurVerifierLInstallation_()');
+  egal(c.elements[0].revisions, revisions, 'le diagnostic ne touche pas au formulaire');
+  egal(c.elements[0].choix.map((x) => x.valeur), choix, 'ni à ses options');
+
+  c.lire('limiteurEcrireLaVerification_(limiteurVerifierLInstallation_().controles)');
+  egal(lignesDe(c, 'Vérification').length, bilan.controles.length,
+    'le rapport est écrit dans son onglet, un contrôle par ligne');
+
+  // ── Le point qui justifie tout le module ────────────────────────────────
+  // Formulaire injoignable : on ne sait plus rien de sa question, de sa
+  // navigation ni de ses libellés. Les annoncer bons serait le mensonge le plus
+  // coûteux qui soit — celui qui rassure.
+  const perdu = sain_();
+  perdu.feuilles[perdu.nomReponses].urlFormulaire =
+    'https://docs.google.com/forms/d/DISPARU/edit';
+  const aveugle = perdu.lire('limiteurVerifierLInstallation_()');
+  egal(etatDe(aveugle, 'Le formulaire est joignable'), 'Bloquant',
+    'un formulaire injoignable bloque');
+  ['La question des créneaux est pilotable', 'Aucune option ne commande un saut de section',
+    'Les libellés concordent', 'Chaque réponse tombe sur un créneau connu',
+  ].forEach((nom) => {
+    egal(etatDe(aveugle, nom), 'Non mesuré',
+      `« ${nom} » dit « Non mesuré » plutôt que « Bon » : rien ne permettait de le vérifier`);
+  });
+  verifier(aveugle.resume.bon < bilan.resume.bon,
+    'et le compte de « Bon » baisse — un rapport à moitié aveugle ne doit pas '
+    + 'ressembler à un rapport rassurant');
+
+  // ── Ce qui se découvrait jusqu'ici devant un vrai répondant ─────────────
+  const sansPlaces = prepare_({ capacites: [['Mardi 14 h', 2]] });
+  const b1 = sansPlaces.lire('limiteurVerifierLInstallation_()');
+  egal(etatDe(b1, 'Chaque créneau a une capacité'), 'À vérifier',
+    'un créneau sans capacité est signalé');
+  verifier(/Jeudi 9 h/.test(texteDe(b1, 'Chaque créneau a une capacité')),
+    'et nommé, avec ce qu’il faut faire');
+
+  // Une marge au moins égale à la capacité rend le créneau complet dès zéro
+  // inscription : il disparaît sans que personne n'ait pu le choisir.
+  const absurde = prepare_({ capacites: [['Mardi 14 h', 2, 2], ['Jeudi 9 h', 3]] });
+  const b2 = absurde.lire('limiteurVerifierLInstallation_()');
+  egal(etatDe(b2, 'Aucune marge n’annule son créneau'), 'Bloquant',
+    'une marge égale à la capacité bloque : personne ne pourrait jamais choisir '
+    + 'ce créneau');
+  verifier(/Abaissez la marge/.test(texteDe(b2, 'Aucune marge n’annule son créneau')),
+    'et le message dit quoi faire');
+
+  const navigue = sain_();
+  navigue.elements[0].choix[0].navigation = 'GO_TO_PAGE';
+  egal(etatDe(navigue.lire('limiteurVerifierLInstallation_()'),
+    'Aucune option ne commande un saut de section'), 'Bloquant',
+    'un saut de section bloque, avant qu’une soumission ne le découvre');
+
+  const sansDeclencheur = sain_();
+  sansDeclencheur.appels.declencheurs.length = 0;
+  egal(etatDe(sansDeclencheur.lire('limiteurVerifierLInstallation_()'),
+    'Le déclencheur est posé'), 'Bloquant',
+    'aucun déclencheur : rien ne se passerait à la réception d’une réponse');
+
+  const enDouble = sain_();
+  enDouble.appels.declencheurs.push({ fonction: 'surSoumissionDuFormulaire' });
+  const b3 = enDouble.lire('limiteurVerifierLInstallation_()');
+  egal(etatDe(b3, 'Le déclencheur est posé'), 'À vérifier',
+    'deux déclencheurs : chaque réponse serait traitée deux fois');
+  verifier(/plusieurs fois/.test(texteDe(b3, 'Le déclencheur est posé')),
+    'et le message dit ce que cela coûte');
+
+  // Confirmation activée sans adresse collectée : le cas se découvrait au
+  // premier envoi, c'est-à-dire jamais, puisque rien ne partait.
+  const sansAdresse = prepare_({
+    entete: ['Horodatage', 'Créneau souhaité'],
+    reponses: [['2026-09-18 09:10', 'Mardi 14 h']],
+    capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 3]],
+  });
+  sansAdresse.lire("SocleFeuilles.ecrireReglage('Réglages', 'Envoyer une confirmation', 'Oui')");
+  egal(etatDe(sansAdresse.lire('limiteurVerifierLInstallation_()'),
+    'Les adresses nécessaires sont collectées'), 'Bloquant',
+    'confirmation activée sans colonne d’adresse : rien ne partirait');
+
+  const inconnu = prepare_({
+    reponses: [['2026-09-18 09:10', 'a@exemple.org', 'Lundi 8 h']],
+    capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 3]],
+  });
+  const b4 = inconnu.lire('limiteurVerifierLInstallation_()');
+  egal(etatDe(b4, 'Chaque réponse tombe sur un créneau connu'), 'À vérifier',
+    'une réponse comptée nulle part est signalée');
+  verifier(/Lundi 8 h/.test(texteDe(b4, 'Chaque réponse tombe sur un créneau connu')),
+    'avec la valeur en cause');
+
+  // Le rang vient du numéro de ligne : trier la feuille déplace la frontière
+  // entre les retenus et la liste d'attente, sans que rien ne le signale.
+  const trie = prepare_({
+    reponses: [
+      ['2026-09-18 10:00', 'tard@exemple.org', 'Mardi 14 h'],
+      ['2026-09-18 09:00', 'tot@exemple.org', 'Mardi 14 h'],
+    ],
+    capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 3]],
+  });
+  const b5 = trie.lire('limiteurVerifierLInstallation_()');
+  egal(etatDe(b5, 'Les réponses sont dans leur ordre d’arrivée'), 'À vérifier',
+    'une feuille triée est détectée sur les horodatages');
+  verifier(/liste d’attente/.test(texteDe(b5, 'Les réponses sont dans leur ordre d’arrivée')),
+    'et le message dit ce que le tri a déplacé');
+
+  // « Non mesuré » dit qu'on n'a PAS PU vérifier, jamais qu'on n'a rien trouvé.
+  // Les deux cas se ressemblent et doivent se distinguer, sinon le rapport dit
+  // « je ne sais pas » là où il sait, et on cesse de lire la colonne.
+  egal(etatDe(bilan, 'Les réponses sont dans leur ordre d’arrivée'), 'Bon',
+    'sans aucune réponse, l’ordre est « Bon » : il n’y avait rien à redire, ce '
+    + 'qui n’est pas la même chose que n’avoir pas pu regarder');
+
+  const sansDates = prepare_({
+    reponses: [['—', 'a@exemple.org', 'Mardi 14 h'], ['—', 'b@exemple.org', 'Jeudi 9 h']],
+    capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 3]],
+  });
+  const b6 = sansDates.lire('limiteurVerifierLInstallation_()');
+  egal(etatDe(b6, 'Les réponses sont dans leur ordre d’arrivée'), 'Non mesuré',
+    'une colonne d’horodatage illisible, elle, donne « Non mesuré » : on n’a pas '
+    + 'pu regarder, et le dire est le seul rapport honnête');
+
+  // Zéro créneau n'est pas « tous ont une capacité ». Le dire « Bon » serait la
+  // façon la plus sûre de ne jamais voir qu'il n'y a rien à piloter.
+  const vide = monter({
+    elements: [{ type: 'LIST', titre: 'Créneau souhaité', choix: [] }],
+  });
+  vide.lire('limiteurInstaller_()');
+  const b7 = vide.lire('limiteurVerifierLInstallation_()');
+  egal(etatDe(b7, 'Chaque créneau a une capacité'), 'À vérifier',
+    'un référentiel vide est signalé, et non annoncé bon faute de manquant');
+  verifier(/ajoutez des options/.test(texteDe(b7, 'Chaque créneau a une capacité')),
+    'avec ce qu’il faut faire pour le remplir');
+
+  const quotaBas = sain_({ quota: 3 });
+  egal(etatDe(quotaBas.lire('limiteurVerifierLInstallation_()'), 'Il reste du quota d’envoi'),
+    'À vérifier', 'un quota d’envoi presque épuisé est signalé avant d’ouvrir '
+    + 'les inscriptions, pas au premier dépassement non annoncé');
+}
+
+section('O. Les listes qu’on emporte le jour de la visite');
+{
+  const listes_ = (c) => {
+    const bilan = c.lire('limiteurEtablirLesListes_()');
+    c.lire('limiteurEcrireLesListes_(limiteurEtablirLesListes_())');
+    return bilan;
+  };
+
+  const c = prepare_({
+    entete: ['Horodatage', 'Adresse e-mail', 'Nom', 'Créneau souhaité'],
+    reponses: [
+      ['2026-09-18 09:05', 'a@exemple.org', 'Alice', 'Mardi 14 h'],
+      ['2026-09-18 09:07', 'b@exemple.org', 'Bruno', 'Mardi 14 h'],
+      ['2026-09-18 09:12', 'c@exemple.org', 'Chloé', 'Mardi 14 h'],
+      ['2026-09-18 09:20', 'd@exemple.org', 'Diane', 'Jeudi 9 h'],
+    ],
+    capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 3]],
+  });
+  const bilan = listes_(c);
+  const lignes = lignesDe(c, 'Listes');
+
+  egal(bilan.resume.retenues, 3, 'trois personnes retenues : deux le mardi, une le jeudi');
+  egal(bilan.resume.attentes, 1, 'et une en liste d’attente');
+
+  // L'ordre du référentiel, puis le rang : c'est l'ordre dans lequel on appelle
+  // les gens, pas celui des horodatages tous créneaux mêlés.
+  egal(lignes.map((une) => [une['Créneau'], une.Rang, une.Statut]), [
+    ['Mardi 14 h', 1, 'Retenue'],
+    ['Mardi 14 h', 2, 'Retenue'],
+    ['Mardi 14 h', 3, 'Liste d’attente'],
+    ['Jeudi 9 h', 1, 'Retenue'],
+  ], 'les listes sont ordonnées par créneau puis par rang, et disent le statut');
+
+  // Sans savoir quelles questions le formulaire pose, on reprend tout sauf ce
+  // qui a déjà sa place : deviner laquelle porte l'identité en perdrait une.
+  egal(bilan.reprises, ['Adresse e-mail', 'Nom'],
+    'toutes les colonnes de réponse sont reprises, hors horodatage et créneau');
+  egal(lignes[0].Nom, 'Alice', 'et leur contenu suit la personne');
+  egal(lignes[0]['Inscrite le'], '2026-09-18 09:05:00',
+    'avec son heure d’inscription, au format qui se trie comme du texte');
+  egal(lignes[0].Ligne, 2, 'et le numéro de ligne, pour la retrouver dans les réponses');
+
+  c.lire("SocleFeuilles.ecrireReglage('Réglages', "
+    + "'Colonnes à reprendre dans les listes', 'Nom')");
+  egal(listes_(c).reprises, ['Nom'], 'le réglage permet de restreindre les colonnes');
+
+  // ── Ce qui ne doit jamais disparaître ───────────────────────────────────
+  const orphelin = prepare_({
+    entete: ['Horodatage', 'Adresse e-mail', 'Créneau souhaité'],
+    reponses: [
+      ['2026-09-18 09:05', 'a@exemple.org', 'Mardi 14 h'],
+      ['2026-09-18 09:30', 'perdu@exemple.org', 'Lundi 8 h'],
+    ],
+    capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 3]],
+  });
+  const b2 = listes_(orphelin);
+  const l2 = lignesDe(orphelin, 'Listes');
+  egal(b2.resume.horsReferentiel, 1, 'une réponse au créneau inconnu est comptée à part');
+  const perdue = l2.find((une) => une['Adresse e-mail'] === 'perdu@exemple.org');
+  verifier(!!perdue,
+    'et elle figure quand même dans les listes : quelqu’un d’inscrit qui '
+    + 'n’apparaîtrait nulle part ne se découvrirait que le jour J, devant lui');
+  egal([perdue['Créneau'], perdue.Statut], ['Lundi 8 h', 'Hors référentiel'],
+    'avec sa valeur brute et un statut qui dit pourquoi');
+
+  // Un créneau absent des listes se lirait « je ne sais pas s'il existe ».
+  const jeudi = l2.find((une) => une['Créneau'] === 'Jeudi 9 h');
+  egal([jeudi.Statut, jeudi.Rang], ['Aucune inscription', ''],
+    'un créneau sans inscription figure quand même, et le dit');
+
+  // Une capacité non renseignée ne permet pas de dire si la personne est retenue.
+  const flou = prepare_({
+    entete: ['Horodatage', 'Adresse e-mail', 'Créneau souhaité'],
+    reponses: [['2026-09-18 09:05', 'a@exemple.org', 'Jeudi 9 h']],
+    capacites: [['Mardi 14 h', 2]],
+  });
+  listes_(flou);
+  egal(lignesDe(flou, 'Listes').find((une) => une['Créneau'] === 'Jeudi 9 h').Statut,
+    'Capacité non définie',
+    'sans capacité, on ne dit pas « Retenue » : on ne le sait pas');
+
+  // Les listes se lisent, elles ne pilotent pas.
+  const revisions = c.elements[0].revisions;
+  const choix = c.elements[0].choix.map((x) => x.valeur);
+  listes_(c);
+  egal(c.elements[0].revisions, revisions, 'établir les listes ne touche pas au formulaire');
+  egal(c.elements[0].choix.map((x) => x.valeur), choix, 'ni à ses options');
+
+  // Le jour de la visite, le formulaire peut avoir été supprimé : les listes
+  // doivent rester établissables tant que le réglage nomme la colonne.
+  const sansFormulaire = prepare_({
+    entete: ['Horodatage', 'Adresse e-mail', 'Créneau souhaité'],
+    reponses: [['2026-09-18 09:05', 'a@exemple.org', 'Mardi 14 h']],
+    capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 3]],
+  });
+  sansFormulaire.lire("SocleFeuilles.ecrireReglage('Réglages', "
+    + "'Colonne du créneau dans les réponses', 'Créneau souhaité')");
+  sansFormulaire.feuilles[sansFormulaire.nomReponses].urlFormulaire =
+    'https://docs.google.com/forms/d/DISPARU/edit';
+  egal(sansFormulaire.lire('limiteurEtablirLesListes_()').resume.retenues, 1,
+    'le formulaire disparu n’empêche pas d’établir les listes, le réglage suffisant '
+    + 'à savoir quelle colonne lire');
+}
+
+section('P. Les couleurs disent la même chose partout, et les colonnes s’expliquent');
+{
+  const reglesDe = (c, onglet) => (c.feuilles[onglet] ? c.feuilles[onglet].regles : []);
+  const teinteDe = (c, onglet, valeur) => {
+    const trouve = reglesDe(c, onglet).find((une) => une.valeur === valeur);
+    return trouve ? [trouve.fond, trouve.texte] : null;
+  };
+  const noteDe = (c, onglet, colonne) => {
+    const f = c.feuilles[onglet];
+    if (!f) return '';
+    const entete = f.getRange(1, 1, 1, f.getLastColumn()).getValues()[0].map(String);
+    const rang = entete.indexOf(colonne);
+    return rang === -1 ? '' : (f.notes[`1:${rang + 1}`] || '');
+  };
+
+  const c = prepare_({
+    entete: ['Horodatage', 'Adresse e-mail', 'Créneau souhaité'],
+    reponses: [
+      ['2026-09-18 09:05', 'a@exemple.org', 'Mardi 14 h'],
+      ['2026-09-18 09:07', 'b@exemple.org', 'Mardi 14 h'],
+      ['2026-09-18 09:30', 'perdu@exemple.org', 'Lundi 8 h'],
+    ],
+    capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 3]],
+  });
+
+  egal(reglesDe(c, 'Créneaux').length, 4,
+    'quatre règles sur l’onglet « Créneaux » : une par état possible');
+  verifier(!!teinteDe(c, 'Créneaux', 'Ouvert'), '« Ouvert » est coloré');
+
+  // « Complet » n'est pas un problème, c'est le fonctionnement normal. Le
+  // peindre en orange le ferait traiter comme une anomalie.
+  egal(teinteDe(c, 'Créneaux', 'Complet'), teinteDe(c, 'Créneaux', 'Fermé à la main'),
+    '« Complet » porte la teinte de ce qui est fini, comme « Fermé à la main » : '
+    + 'il n’y a plus rien à y faire, ce n’est pas une anomalie');
+  verifier(JSON.stringify(teinteDe(c, 'Créneaux', 'Complet'))
+    !== JSON.stringify(teinteDe(c, 'Créneaux', 'Sans capacité')),
+    'et « Sans capacité », qui attend une décision, ne lui ressemble pas');
+
+  c.lire('limiteurEcrireLesListes_(limiteurEtablirLesListes_())');
+  c.lire('limiteurEcrireLaVerification_(limiteurVerifierLInstallation_().controles)');
+
+  // Un rouge qui voudrait dire deux choses selon l'onglet se lit moins vite
+  // qu'une absence de couleur : il faut d'abord se rappeler où l'on est.
+  egal(teinteDe(c, 'Listes', 'Hors référentiel'), teinteDe(c, 'Journal', 'Hors référentiel'),
+    '« Hors référentiel » porte la même teinte aux Listes et au Journal');
+  egal(teinteDe(c, 'Listes', 'Retenue'), teinteDe(c, 'Créneaux', 'Ouvert'),
+    'et ce qui va bien porte partout la teinte de ce qui va bien');
+  egal(teinteDe(c, 'Vérification', 'Non mesuré'),
+    teinteDe(c, 'Listes', 'Capacité non définie'),
+    '« Non mesuré » et « Capacité non définie » partagent la teinte de ce qu’on '
+    + 'ignore — ni un demi-bon, ni une anomalie');
+  verifier(JSON.stringify(teinteDe(c, 'Vérification', 'Non mesuré'))
+    !== JSON.stringify(teinteDe(c, 'Vérification', 'À vérifier')),
+    'qui ne se confond pas avec ce qu’il y a à traiter');
+
+  // L'onglet « Aide » explique l'outil ; la note explique la colonne qu'on a
+  // sous le curseur.
+  verifier(/réglage « Marge par défaut »/.test(noteDe(c, 'Créneaux', 'Marge')),
+    'la note de « Marge » dit ce que fait une cellule vide');
+  verifier(/non décidé/.test(noteDe(c, 'Créneaux', 'Places')),
+    'celle de « Places » dit que vide ne veut pas dire zéro');
+  verifier(/ne défait jamais/.test(noteDe(c, 'Créneaux', 'État')),
+    'celle d’« État » dit ce que le code ne touchera pas');
+  verifier(/PAS PU/.test(noteDe(c, 'Vérification', 'État')),
+    'et celle du diagnostic rappelle que « Non mesuré » n’est pas « Bon »');
+  verifier(/comptée nulle part/.test(noteDe(c, 'Listes', 'Statut')),
+    'celle des listes dit ce qu’est une inscription hors référentiel');
+
+  // `clear()` emporte notes et règles avec le contenu : un onglet réécrit se
+  // retrouverait nu, et rien ne le signalerait.
+  c.lire('limiteurEcrireLesListes_(limiteurEtablirLesListes_())');
+  verifier(!!teinteDe(c, 'Listes', 'Retenue'),
+    'réécrire les listes repose leurs couleurs');
+  verifier(/ordre d’arrivée/.test(noteDe(c, 'Listes', 'Rang')),
+    'et leurs notes');
+
+  // Rhabiller deux fois ne doit pas empiler les règles.
+  const avant = reglesDe(c, 'Créneaux').length;
+  c.lire('limiteurHabillerTout_()');
+  c.lire('limiteurHabillerTout_()');
+  egal(reglesDe(c, 'Créneaux').length, avant,
+    'rhabiller ne double pas les règles : on retire les nôtres avant de les reposer');
+
+  // Une règle posée par l'utilisateur sur une autre colonne lui appartient.
+  c.lire(`(() => {
+    const f = SpreadsheetApp.getActive().getSheetByName(LIMITEUR_ONGLET_CRENEAUX_);
+    const mienne = SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('à moi').setBackground('#000000')
+      .setRanges([f.getRange(2, 1, 10, 1)]).build();
+    f.setConditionalFormatRules([...f.getConditionalFormatRules(), mienne]);
+  })()`);
+  c.lire('limiteurHabillerTout_()');
+  verifier(reglesDe(c, 'Créneaux').some((une) => une.valeur === 'à moi'),
+    'une règle posée sur une autre colonne survit à l’habillage');
+
+  // L'habillage ne doit jamais empêcher l'outil de fonctionner.
+  const casse = prepare_({ capacites: [['Mardi 14 h', 2]] });
+  casse.panne.onglet = 'Créneaux';
+  let leveSurHabillage = false;
+  try { casse.lire('limiteurHabillerTout_()'); } catch (erreur) { leveSurHabillage = true; }
+  verifier(!leveSurHabillage,
+    'un onglet protégé ne fait pas échouer l’habillage : l’apparence ne doit pas '
+    + 'empêcher un outil de fonctionner');
+}
+
 section('K. La documentation dit ce que le banc fait vraiment');
 {
   // Ces chiffres vivent à quatre endroits — les deux versions du README, le
@@ -985,14 +1560,22 @@ section('K. La documentation dit ce que le banc fait vraiment');
   const NOMBRES_ = {
     fr: ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit',
       'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize',
-      'dix-sept', 'dix-huit', 'dix-neuf', 'vingt'],
+      'dix-sept', 'dix-huit', 'dix-neuf', 'vingt', 'vingt et un', 'vingt-deux',
+      'vingt-trois', 'vingt-quatre', 'vingt-cinq', 'vingt-six', 'vingt-sept',
+      'vingt-huit', 'vingt-neuf', 'trente', 'trente et un', 'trente-deux',
+      'trente-trois', 'trente-quatre', 'trente-cinq', 'trente-six',
+      'trente-sept', 'trente-huit', 'trente-neuf', 'quarante'],
     en: ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
       'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
-      'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'],
+      'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'twenty-one',
+      'twenty-two', 'twenty-three', 'twenty-four', 'twenty-five', 'twenty-six',
+      'twenty-seven', 'twenty-eight', 'twenty-nine', 'thirty', 'thirty-one',
+      'thirty-two', 'thirty-three', 'thirty-four', 'thirty-five', 'thirty-six',
+      'thirty-seven', 'thirty-eight', 'thirty-nine', 'forty'],
   };
   const mot = (n, langue) => {
     if (n >= NOMBRES_[langue].length) {
-      throw new Error(`Le banc ne sait écrire que jusqu'à vingt en « ${langue} », `
+      throw new Error(`Le banc ne sait écrire que jusqu'à quarante en « ${langue} », `
         + `et l'épreuve porte ${n} défauts. Étendez NOMBRES_ dans banc/test.js, `
         + 'ou écrivez le nombre en chiffres dans la documentation.');
     }

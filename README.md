@@ -102,6 +102,137 @@ fermé par l'outil**. Un formulaire que quelqu'un a fermé l'a été pour une ra
 qui n'appartient pas au code, et une réouverture automatique la défairait. Le
 même principe vaut pour un créneau marqué « Fermé à la main ».
 
+## Se lire d'un coup d'œil
+
+Les quatre onglets qui portent un état — « Créneaux », « Journal »,
+« Vérification », « Listes » — sont colorés, et **la même couleur veut dire la
+même chose partout**. Cinq sens, pas trois :
+
+| | |
+|---|---|
+| vert | c'est bon, rien à faire |
+| gris | c'est fini, il n'y a plus rien à faire |
+| bleu | on ne sait pas, et c'est dit |
+| orange | il y a quelque chose à traiter |
+| rouge | il faut agir, quelqu'un ou quelque chose est en défaut |
+
+Le gris et le bleu font la différence avec un simple vert-orange-rouge.
+« Complet » n'est pas un problème : c'est le fonctionnement normal, donc gris.
+« Non mesuré » n'est pas un demi-bon : c'est une ignorance avouée, donc bleu.
+Les peindre en orange les ferait traiter comme des anomalies, et on cesserait de
+lire la colonne.
+
+La couleur ne porte jamais l'information seule — chaque cellule colorée contient
+déjà le mot. Elle accélère une lecture qui reste entière en noir et blanc.
+
+Une règle de mise en forme que vous poseriez sur une **autre** colonne survit à
+l'habillage ; sur la colonne pilotée, elle serait remplacée au prochain passage.
+
+### Les colonnes s'expliquent là où on les lit
+
+Chaque en-tête dont le sens n'est pas évident porte une note, visible au survol :
+ce que veut dire une cellule « Places » vide, ce que fait exactement la
+« Marge », ce que le code ne défera jamais dans la colonne « État », pourquoi
+« Non mesuré » n'est pas « Bon ».
+
+L'onglet « Aide » explique l'outil ; les notes expliquent la colonne qu'on a sous
+le curseur. Un expert privé d'explication reconstruit un raisonnement
+approximatif, et décide sur cette approximation.
+
+## Les listes qu'on emporte
+
+Menu **Créneaux > Établir les listes**. L'onglet « Listes » donne, créneau par
+créneau et dans l'ordre d'arrivée, les personnes retenues puis celles en liste
+d'attente — avec leur rang, leur heure d'inscription et les réponses qu'elles
+ont données.
+
+C'est ce qui manquait le jour de la visite : la feuille des réponses mêle tous
+les créneaux et les trie par horodatage, donc il fallait filtrer à la main.
+
+Par défaut, **toutes** les colonnes de réponse sont reprises, sauf l'horodatage
+et le créneau qui ont déjà leur place. On ne sait pas quelles questions votre
+formulaire pose, et deviner laquelle porte l'identité reviendrait à en perdre
+une. Le réglage *Colonnes à reprendre dans les listes* permet de restreindre et
+d'ordonner.
+
+### Personne ne disparaît
+
+Une réponse dont le libellé ne correspond à aucun créneau connu figure quand
+même, en fin de liste, avec sa valeur brute et le statut « Hors référentiel ».
+Quelqu'un d'inscrit qui n'apparaîtrait sur aucune liste est le défaut le plus
+coûteux que ce module puisse avoir : il ne se voit que le jour J, devant la
+personne.
+
+Un créneau sans aucune inscription figure lui aussi, avec « Aucune
+inscription » — son absence se lirait « je ne sais pas s'il existe », et une
+absence ne doit jamais avoir deux sens. Un créneau dont la capacité n'est pas
+renseignée ne dit pas « Retenue » mais « Capacité non définie » : on ne le sait
+pas.
+
+Les listes se lisent, elles ne pilotent rien. Le formulaire n'est même pas
+ouvert si le réglage *Colonne du créneau dans les réponses* est renseigné —
+ainsi elles restent établissables le jour où le formulaire a été supprimé.
+
+## Vérifier avant d'ouvrir les inscriptions
+
+Menu **Créneaux > Vérifier mon installation**. Une quinzaine de contrôles, un
+onglet « Vérification » où chaque ligne dit ce qui va, ce qui ne va pas, et quoi
+faire. Rien n'est modifié : le diagnostic se lance sur une campagne en cours.
+
+Tout ce qu'il contrôle ne se découvrait jusqu'alors qu'à la première soumission,
+c'est-à-dire devant un vrai répondant : un déclencheur absent ou posé deux fois,
+une confirmation activée sans que le formulaire collecte les adresses, un libellé
+modifié d'un seul côté, une réponse comptée nulle part, un quota d'envoi presque
+épuisé, une feuille de réponses triée — le tri déplace les rangs, donc la
+frontière entre les personnes retenues et la liste d'attente.
+
+Il attrape aussi un piège qu'on ne voit pas venir : **une marge supérieure ou
+égale à la capacité** rend le créneau complet dès zéro inscription. Il disparaît
+du formulaire sans que personne n'ait jamais pu le choisir, et rien n'a l'air
+cassé.
+
+### « Non mesuré » n'est pas « Bon »
+
+Un contrôle qui n'a **pas pu** s'exécuter le dit. Si le formulaire est
+injoignable, on ne sait rien de sa question, de sa navigation ni de ses
+libellés : les annoncer bons serait le mensonge le plus coûteux qui soit, celui
+qui rassure. Ces lignes affichent « Non mesuré » avec la raison, et le résumé
+les énumère à part.
+
+C'est à distinguer d'un contrôle qui a regardé et n'a rien trouvé à redire :
+sans aucune réponse enregistrée, l'ordre d'arrivée est « Bon », parce qu'il n'y
+avait rien à redire — et non « Non mesuré », qui voudrait dire qu'on n'a pas su
+regarder.
+
+## Quand quelque chose casse
+
+Le déclencheur de soumission ne peut pas mourir : tout ce qu'il fait passe par
+un filet.
+
+Sans lui, une seule cause — un saut de section ajouté au formulaire, une
+question renommée, une colonne calculée déplacée — arrête le limiteur pour de
+bon. Google envoie au propriétaire un message technique qu'il lira ou non, et
+les créneaux complets restent affichés, soumission après soumission, sans que
+rien dans le classeur ne le dise. C'est la panne la plus coûteuse de cet outil,
+parce qu'elle ressemble à un fonctionnement normal.
+
+Avec le filet, un échec produit trois choses :
+
+- une ligne au **Journal**, verdict « Échec », dont la colonne *Ce qui a échoué*
+  porte le remède et non la trace technique ;
+- une **alerte** au destinataire réglé — ou, à défaut, à la personne qui a posé
+  le déclencheur, puisque c'est sous son identité qu'il s'exécute ;
+- une entrée dans le **journal d'exécution** Apps Script, là où un
+  administrateur la cherchera.
+
+L'alerte est agrégée **par cause** : une campagne dont chaque soumission échoue
+pour la même raison produit une alerte, pas trois cents. L'erreur n'est
+volontairement pas relevée, pour ne pas déclencher en doublon le courriel
+technique de Google — le nôtre dit quoi faire, pas seulement que ça a raté.
+
+Un verrou déjà pris n'est pas un échec et ne signale rien : l'exécution qui le
+détient recomptera tout, cette soumission comprise.
+
 ## Un cas exemple, pour comprendre sans rien risquer
 
 Menu **Créneaux > Voir un exemple**. Trois onglets préfixés « Démo — » se posent
@@ -192,7 +323,7 @@ tient pas à ma parole.
 node banc/test.js
 ```
 
-101 assertions, hors de Google. Les faux services refusent ce que les vrais
+187 assertions, hors de Google. Les faux services refusent ce que les vrais
 refusent : une question à choix sans aucune option, une conversion de type
 impossible, une feuille liée à aucun formulaire, un envoi sans destinataire.
 
@@ -202,7 +333,7 @@ Le banc s'éprouve lui-même :
 node banc/epreuve.js
 ```
 
-Il réintroduit **dix-sept défauts réels** dans une copie du projet — l'adoption des
+Il réintroduit **trente-quatre défauts réels** dans une copie du projet — l'adoption des
 options nouvelles supprimée, le refus de la navigation par section levé, la
 réouverture rendue aveugle, la marge appliquée au verdict, le quota d'envoi plus
 lu, un formulaire ouvert par identifiant — et vérifie que le banc échoue sur
@@ -217,6 +348,52 @@ globaux — deux fichiers déclarant la même constante empêchent le projet
 ```bash
 cat apps-script/*.gs > /tmp/limiteur.js && node --check /tmp/limiteur.js
 ```
+
+### Le classeur d'essai
+
+```bash
+node outils/preparer-essai.js
+```
+
+Engendre `../limiteur-essai/` — **à côté** du dépôt et non dedans : clasp
+remonte les dossiers parents pour trouver un `.clasp.json`, et depuis un dossier
+imbriqué il repousserait le projet du parent. Les fichiers y sont à plat, un
+sous-dossier devenant un préfixe de nom dans l'éditeur.
+
+Le dossier n'est versionné nulle part : il se réengendre d'une commande, et seul
+le préparateur est suivi par git. Ce qui appartient à clasp — `.clasp.json` —
+survit à la régénération, faute de quoi le lien vers le classeur serait perdu.
+
+Puis, dans l'éditeur Apps Script du classeur créé, deux fonctions au **menu
+d'exécution** : `preparerLeFormulaireDEssai`, qui crée un formulaire à trois
+créneaux et le lie au classeur, et `controlerEnConditionsReelles`. Elles ne sont
+pas au menu du classeur : y ajouter une entrée aurait demandé de modifier
+`Menu.gs`, donc d'éprouver autre chose que ce qui est livré.
+
+Le contrôle éprouve ce que le banc ne peut pas voir — au premier rang les trois
+hypothèses qui portent du code de refus depuis la première version et n'ont
+jamais été vérifiées ailleurs que dans la documentation de Google :
+
+- **`setChoiceValues` efface-t-il la navigation par section ?** Si non, le refus
+  de piloter une telle question est inutilement strict ;
+- **une question à choix refuse-t-elle une liste vide ?** C'est pourquoi on
+  ferme le formulaire au lieu de vider la question ;
+- **le déclencheur part-il après l'écriture de la ligne ?** D'où
+  `forSpreadsheet` plutôt que `forForm`. Ce dernier point reste une
+  **indication et non une preuve** : un déclencheur lent ressemble à un
+  déclencheur qui n'a pas vu la ligne.
+
+Il vérifie aussi ce qu'un faux service ne peut que supposer : qu'une chaîne de
+date ressorte en objet `Date`, que le fuseau du script vaille celui du classeur
+— `clasp create` pose celui du compte —, que `getFormUrl()` rende `null` sur
+une feuille non liée, et que les énumérations citées existent.
+
+Il jette les formulaires qu'il crée et n'envoie aucun courriel. Le manifeste
+d'essai demande une portée de plus, `drive.file`, restreinte aux fichiers créés
+par ce script ; elle n'entre pas dans le manifeste du produit.
+
+**Ce qui aura été démenti se reporte dans le banc** : un faux service qui valide
+un code faux est pire qu'un faux service absent.
 
 ## Ce qui reste à faire
 
@@ -307,6 +484,104 @@ A choice question cannot have zero options — Google Forms rejects it. When the
 
 It automatically reopens as soon as a spot is freed, but **only if the form was closed by the tool**. A form manually closed by an administrator was closed for human reasons, and an automated reopening must never override that decision. The same rule applies to any slot marked "Fermé à la main" (Manually closed).
 
+## Readable at a glance
+
+The four sheets carrying a state — `Créneaux`, `Journal`, `Vérification`,
+`Listes` — are colour-coded, and **the same colour means the same thing
+everywhere**. Five meanings, not three: green (fine, nothing to do), grey (done,
+nothing left to do), blue (unknown, and said so), orange (something to handle),
+red (act — someone or something is at fault).
+
+Grey and blue are what separates this from a plain green-amber-red. `Complet` is
+not a problem, it is normal operation, hence grey. `Non mesuré` is not a
+half-pass, it is an admitted gap, hence blue. Painting either orange would have
+them treated as anomalies, and the column would stop being read. Colour never
+carries the information alone — every coloured cell already holds the word, so
+the sheet reads whole in black and white.
+
+A conditional-format rule you set on **another** column survives; on the driven
+column it is replaced on the next pass.
+
+### Columns explain themselves where you read them
+
+Every header whose meaning is not obvious carries a hover note: what an empty
+`Places` cell means, what `Marge` actually does, what the code will never undo
+in `État`, why `Non mesuré` is not `Bon`. The `Aide` sheet explains the tool;
+notes explain the column under your cursor.
+
+## Lists to take with you
+
+**Créneaux > Établir les listes** writes a `Listes` sheet giving, slot by slot
+and in arrival order, the people confirmed and then those on the waiting list —
+with their rank, sign-up time and the answers they gave. The response sheet
+mixes every slot and sorts by timestamp, so this used to be manual filtering.
+
+By default **every** response column is carried over, except the timestamp and
+the slot, which already have their place: we do not know what questions your form
+asks, and guessing which one holds identity would mean dropping one. The
+*Colonnes à reprendre dans les listes* setting narrows and orders them.
+
+### Nobody disappears
+
+A response whose label matches no known slot still appears, at the end, with its
+raw value and the `Hors référentiel` status. Someone signed up who appeared on
+no list at all is the most expensive defect this module could have: it only shows
+on the day, in front of them. A slot with no sign-ups also appears, marked
+`Aucune inscription` — its absence would read "I don't know whether it exists",
+and an absence must never carry two meanings. A slot with no capacity set reads
+`Capacité non définie`, not `Retenue`: we do not know.
+
+Lists are read-only. The form is not even opened when the *Colonne du créneau
+dans les réponses* setting is filled in, so lists can still be produced the day
+the form has been deleted.
+
+## Check before opening sign-ups
+
+**Créneaux > Vérifier mon installation** runs about fifteen checks and writes a
+`Vérification` sheet where each row states what is fine, what is not, and what
+to do about it. Nothing is modified, so it is safe to run mid-campaign.
+
+Everything it checks used to surface only on the first submission — that is, in
+front of a real respondent: a missing or duplicated trigger, confirmation emails
+enabled while the form collects no addresses, a label changed on one side only, a
+response counted nowhere, a nearly exhausted sending quota, a sorted response
+sheet (sorting moves ranks, hence the line between confirmed people and the
+waiting list). It also catches a trap you do not see coming: **a margin greater
+than or equal to capacity** makes a slot full at zero sign-ups, so it vanishes
+from the form without anyone ever being able to pick it, and nothing looks broken.
+
+### "Not measured" is not "fine"
+
+A check that **could not run** says so. If the form cannot be opened, nothing is
+known about its question, its navigation or its labels — calling them fine would
+be the most expensive kind of lie, the reassuring kind. Those rows read
+`Non mesuré` with the reason, and the summary lists them separately. That is
+distinct from a check that looked and found nothing wrong: with no responses
+recorded, arrival order is `Bon`, because there was nothing to report — not
+`Non mesuré`, which would claim we failed to look.
+
+## When something breaks
+
+The submission trigger cannot die: everything it does runs inside a safety net.
+
+Without one, a single cause — a section jump added to the form, a renamed
+question, a moved computed column — stops the limiter for good. Google emails
+the owner a technical message they may or may not read, while full slots stay on
+display, submission after submission, with nothing in the spreadsheet saying so.
+It is this tool's most expensive failure, because it looks like normal operation.
+
+A failure now produces three things: a **Journal** row with the `Échec` verdict,
+whose *Ce qui a échoué* column carries the remedy rather than the stack trace; an
+**alert** to the configured recipient, or failing that to whoever installed the
+trigger, since it runs under their identity; and an entry in the Apps Script
+**execution log**, where an administrator will look for it.
+
+Alerts are aggregated **by cause**: a campaign failing on every submission for
+the same reason produces one alert, not three hundred. The error is deliberately
+not rethrown, so Google's own technical email does not duplicate ours — and ours
+says what to do about it. A lock already held is not a failure and reports
+nothing: whichever run holds it will recount everything, this submission included.
+
 ## A worked example, safe to run
 
 **Créneaux > Voir un exemple** adds three sheets prefixed `Démo — ` and walks
@@ -376,7 +651,7 @@ Only one occurrence appears (`FormApp.openByUrl` in `Formulaire.gs`), using the 
 node banc/test.js
 ```
 
-101 assertions outside Google's environment. Mock services replicate Google's constraints: rejecting empty choice questions, invalid type conversions, sheets without linked forms, or emails without recipients.
+187 assertions outside Google's environment. Mock services replicate Google's constraints: rejecting empty choice questions, invalid type conversions, sheets without linked forms, or emails without recipients.
 
 The test suite tests itself:
 
@@ -384,13 +659,32 @@ The test suite tests itself:
 node banc/epreuve.js
 ```
 
-It introduces **seventeen deliberate defects** into a project copy (bypassing option adoption, removing section-navigation refusal, blinding the reopening logic, applying margins to verdicts, skipping quota checks, opening forms by ID) and verifies that the bench fails on each. A test suite that remains green against regressions proves nothing.
+It introduces **thirty-four deliberate defects** into a project copy (bypassing option adoption, removing section-navigation refusal, blinding the reopening logic, applying margins to verdicts, skipping quota checks, opening forms by ID) and verifies that the bench fails on each. A test suite that remains green against regressions proves nothing.
 
 Syntax checking across all merged files (detecting global scope conflicts):
 
 ```bash
 cat apps-script/*.gs > /tmp/limiteur.js && node --check /tmp/limiteur.js
 ```
+
+### The test spreadsheet
+
+```bash
+node outils/preparer-essai.js
+```
+
+Generates `../limiteur-essai/` — **alongside** the repository rather than inside it: clasp walks up parent directories to find a `.clasp.json`, and from a nested directory it would push the parent project. Files are flat, since subdirectories become file name prefixes in the Apps Script editor.
+
+The test directory is not tracked anywhere: it is generated on demand, and only `outils/preparer-essai.js` is tracked by git. Clasp configuration (`.clasp.json`) survives regeneration so that the spreadsheet binding is preserved.
+
+Once pushed, two functions appear in the editor's **execution menu**: `preparerLeFormulaireDEssai`, which creates a 3-slot form and links it to the sheet, and `controlerEnConditionsReelles`. They are not in the spreadsheet menu: adding them there would have required modifying `Menu.gs`, thereby testing something different from what is shipped.
+
+The live check tests what the bench can only assume — foremost the three hypotheses backing refusal code since v0.1:
+- **Does `setChoiceValues` erase section navigation?** If not, refusing to control such questions is needlessly strict;
+- **Does a choice question reject an empty option list?** This is why the form is closed instead of clearing the question;
+- **Does the trigger fire after the row is written?** Hence `forSpreadsheet` rather than `forForm`. (This remains an indication rather than proof: a slow trigger looks like one that missed the row).
+
+It also verifies what mock services can only assume: date strings returning as `Date` objects, script timezone matching spreadsheet timezone (`clasp create` uses account default), `getFormUrl()` returning `null` on unlinked sheets, and referenced enums existing.
 
 ## Known limitations and roadmap
 

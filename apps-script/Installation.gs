@@ -133,6 +133,9 @@ const limiteurInstaller_ = () => {
   // La première synchronisation adopte les créneaux déjà présents dans le
   // formulaire : l'utilisateur n'a plus qu'à renseigner les capacités.
   const bilan = limiteurSynchroniser_();
+  // Après la synchronisation : les couleurs se posent sur des colonnes qui
+  // doivent déjà exister, et les notes sur un en-tête déjà écrit.
+  const apparence = limiteurHabillerTout_();
 
-  return { creneaux, journal, reglages, aide, retirees, declencheur, bilan };
+  return { creneaux, journal, reglages, aide, retirees, declencheur, bilan, apparence };
 };
