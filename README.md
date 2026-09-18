@@ -395,18 +395,37 @@ par ce script ; elle n'entre pas dans le manifeste du produit.
 **Ce qui aura été démenti se reporte dans le banc** : un faux service qui valide
 un code faux est pire qu'un faux service absent.
 
-## Ce qui reste à faire
+## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Rien de ce projet n'a encore tourné dans Apps Script.** Le banc simule ; il ne
-remplace pas un essai réel, et l'expérience dit que c'est là que se trouvent les
-surprises. Trois points attendent cette confirmation :
+Le projet a tourné dans Apps Script le 18 septembre 2026 : dix hypothèses
+confirmées, **aucune démentie**.
 
-- que `setChoiceValues` perde bien la navigation par section — le refus est posé
-  sur cette hypothèse, documentée mais jamais vérifiée de mes mains ;
-- que le déclencheur de soumission parte bien **après** l'écriture de la ligne
-  (c'est la raison du choix `forSpreadsheet` plutôt que `forForm`) ;
-- la largeur réelle de la fenêtre de surréservation, en soumettant deux réponses
-  simultanées sur la dernière place.
+Confirmé en conditions réelles, et ces trois-là portaient du code depuis la
+première version :
+
+- **`setChoiceValues` efface bien la navigation par section.** Le refus de
+  piloter une telle question est donc justifié : il ne prive personne d'un usage
+  légitime, il empêche un dégât qui ne se verrait qu'aux premiers répondants
+  égarés ;
+- **une question à choix refuse une liste d'options vide** — fermer le
+  formulaire quand tout est complet est la seule issue ;
+- **`getFormUrl()` rend `null`** sur une feuille non liée, ce qui permet de
+  trouver la feuille des réponses sans dépendre de son nom.
+
+Ainsi que ce qu'un faux service ne pouvait que supposer : une chaîne ISO écrite
+en cellule ressort en objet `Date`, le fuseau du script vaut celui du classeur,
+`asListItem()` lève sur un autre type, `hasOtherOption` n'existe pas sur une
+liste, et les énumérations citées existent bien.
+
+**Deux points restent ouverts**, et aucun ne se mesure par l'API :
+
+- **le déclencheur part-il après l'écriture de la ligne ?** C'est la raison du
+  choix `forSpreadsheet` plutôt que `forForm`. Un formulaire qui collecte les
+  adresses refuse les réponses construites par script : la mesure demande une
+  soumission à la main, puis de regarder si le Journal s'alimente ;
+- **la largeur réelle de la fenêtre de surréservation**, qui déterminera la
+  marge à recommander par défaut. Elle se mesure en gardant un formulaire ouvert
+  dans une fenêtre privée pendant qu'on remplit le créneau ailleurs.
 
 Non traité, et assumé : les grilles, et les formulaires à plusieurs questions de
 créneaux. Les uns comme les autres demandent une autre façon de compter.
@@ -688,7 +707,8 @@ It also verifies what mock services can only assume: date strings returning as `
 
 ## Known limitations and roadmap
 
-- **Not yet field-tested in live Apps Script:** The bench mocks Google services; real-world trials remain to confirm `setChoiceValues` section behavior, exact submission trigger timing after row insertion, and live race condition latency.
+- **Field-tested on 18 September 2026: ten hypotheses confirmed, none refuted.** Notably `setChoiceValues` does erase section navigation — so refusing to drive such a question is justified — a choice question does reject an empty option list, and `getFormUrl()` does return `null` on an unlinked sheet.
+- **Still open, neither measurable through the API:** whether the submission trigger fires after the row is written (a form collecting email addresses rejects script-built responses, so this needs a manual submission), and the real width of the oversubscription window, which will set the default margin.
 - Grids and multi-question forms are intentionally unsupported (they require different counting models).
 - Very large response sheets are read in full on every submission (fine for hundreds of rows; thousands would warrant paginated or delta counting).
 

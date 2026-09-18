@@ -178,6 +178,95 @@ essai — mais il en donne les liens en fin de rapport.
 le classeur ne reçoit aucune réponse et le contrôle du déclencheur ne peut pas
 avoir lieu ; il le dira, en toutes lettres.
 
+## Le parcours à la main
+
+Le contrôle automatique ne dit rien de l'outil vu par quelqu'un qui s'en sert, et
+il ne peut pas produire une course entre deux personnes. Ce parcours-ci mesure du
+même coup les deux points qui restent ouverts : la largeur de la fenêtre de
+surréservation, et le fait que le déclencheur voie bien la ligne.
+
+**Avant de commencer.** Mettez \`2\` dans « Places » pour *Mardi 14 h* — c'est ce
+qui rend l'essai rapide. Utilisez vos propres adresses : le quota d'envoi vaut
+100 par jour sur un compte grand public contre 1 500 sur Workspace, et un essai
+concluant sur un compte personnel ne dit rien de la production.
+
+### 1. La page restée ouverte
+
+C'est l'étape pour laquelle tout le reste existe : elle produit la
+surréservation, qu'aucun banc ne peut simuler.
+
+1. Ouvrez le formulaire dans une **fenêtre de navigation privée** — c'est votre
+   « autre répondant ». Remplissez-le sur *Mardi 14 h*, **sans envoyer**.
+2. Dans votre fenêtre normale, inscrivez deux personnes sur *Mardi 14 h*.
+   **Notez l'heure** de la seconde, à la seconde près.
+3. Rechargez le formulaire dans la fenêtre normale jusqu'à ce que *Mardi 14 h*
+   disparaisse. **Notez l'heure.** L'écart entre les deux est la fenêtre de
+   surréservation.
+4. Revenez à la fenêtre privée — l'option y figure toujours — et **envoyez**.
+
+À voir : la réponse est acceptée par Google, l'onglet « Journal » porte une ligne
+« Surréservation » au rang 3, et un courriel de liste d'attente part.
+
+**Cette étape règle aussi le point du déclencheur.** Si le Journal s'alimente,
+c'est qu'il voit bien la ligne écrite, et \`forSpreadsheet\` est le bon choix. S'il
+reste vide, attendez une minute avant d'en conclure quoi que ce soit.
+
+### 2. L'annulation rend la place
+
+Supprimez la ligne d'une personne dans la feuille des réponses, puis
+**Créneaux > Recompter**. *Mardi 14 h* doit revenir — et **en tête de liste**,
+pas à la fin : c'est l'onglet « Créneaux » qui a gardé son libellé et sa
+position, le formulaire les avait oubliés avec l'option.
+
+### 3. Tout complet ferme le formulaire
+
+Remplissez les trois créneaux. Le formulaire doit se fermer de lui-même, avec son
+message — une question à choix ne peut pas rester sans option. Libérez une place :
+il se rouvre.
+
+### 4. Le filet
+
+Dans le formulaire, donnez à une option un **saut de section**, puis soumettez une
+réponse. Le Journal doit porter « Échec » avec le remède dans la colonne *Ce qui a
+échoué*, et un courriel doit partir. Le déclencheur ne doit pas mourir : la
+soumission suivante doit encore être traitée.
+
+Remettez ensuite la navigation à « Passer à la section suivante ».
+
+### 5. Les quatre écrans
+
+*Voir un exemple*, *Vérifier mon installation*, *Établir les listes*, et un
+coup d'œil aux couleurs et aux notes d'en-tête. Ce qui compte ici n'est pas que
+cela marche, mais que cela se comprenne sans explication.
+
+## Feuille de relevé
+
+| Mesure | Attendu | Constaté |
+|---|---|---|
+| Heure de la 2ᵉ inscription (étape 1) | — | |
+| Heure de la disparition de l'option | — | |
+| **Fenêtre de surréservation** | inconnue à ce jour | |
+| Journal après l'envoi de la fenêtre privée | « Surréservation », rang 3 | |
+| Courriel de liste d'attente reçu | oui | |
+| Le Journal s'alimente (donc le déclencheur voit la ligne) | oui | |
+| L'option revient après annulation | oui, en tête de liste | |
+| Le formulaire se ferme quand tout est plein | oui, avec message | |
+| Il se rouvre quand une place se libère | oui | |
+| Filet : Journal après un saut de section | « Échec » + quoi faire | |
+| La soumission suivante est encore traitée | oui | |
+
+## Ce qu'il faut rapporter
+
+Trois choses, et la troisième n'existe nulle part aujourd'hui :
+
+- ce que le **contrôle automatique** a démenti, s'il a démenti quelque chose —
+  chaque démenti se reporte dans le banc, un faux service qui valide un code faux
+  étant pire qu'un faux service absent ;
+- ce qui vous a **surpris ou gêné** à l'usage, même sans être un défaut : c'est
+  ce que le contrôle automatique ne saura jamais voir ;
+- **la fenêtre de surréservation**. C'est elle qui dira quelle marge recommander
+  par défaut, et personne n'en connaît la valeur.
+
 ## Après l'essai
 
 Le classeur et son formulaire peuvent être jetés. Ce dossier n'est versionné

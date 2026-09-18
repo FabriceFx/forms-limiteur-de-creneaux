@@ -3,6 +3,49 @@
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [0.8.0] - 2026-09-18
+
+**Éprouvée en conditions réelles.** Dix hypothèses confirmées, **aucune
+démentie**. Le code ne change pas — ce qui change, c'est ce qu'on en sait.
+
+### Vérifié
+
+- **`setChoiceValues` efface bien la navigation par section.** C'est
+  l'hypothèse qui portait le plus de code depuis la première version, et la
+  seule qui pouvait rendre un refus injustifié. Elle tient : refuser de
+  piloter une question à sauts de section ne prive personne d'un usage
+  légitime, et empêche un dégât qui ne se verrait qu'aux premiers répondants
+  égarés.
+- **Une question à choix refuse une liste d'options vide**, donc fermer le
+  formulaire est la seule issue quand tout est complet.
+- **`getFormUrl()` rend `null`** sur une feuille non liée — c'est ce qui
+  permet de trouver la feuille des réponses sans dépendre de son nom.
+- **Une chaîne ISO écrite en cellule ressort en objet `Date`** : la fondation
+  de `SocleDates`, jamais vérifiée jusqu'ici ailleurs que dans un CLAUDE.md.
+- Et le fuseau, `asListItem()` sur un mauvais type, `hasOtherOption` absent
+  d'une liste, `FormApp.ItemType`, `FormApp.PageNavigationType`, le quota.
+
+### Ajouté
+
+- **Un protocole d'essai à la main**, dans le LISEZMOI du dossier d'essai, avec
+  sa feuille de relevé. Le contrôle automatique ne dit rien de l'outil vu par
+  quelqu'un qui s'en sert, et il ne peut pas produire une course entre deux
+  personnes. Son étape 1 — garder un formulaire ouvert dans une fenêtre privée
+  pendant qu'on remplit le créneau ailleurs — mesure d'un coup les deux points
+  que l'API ne permet pas d'atteindre : la fenêtre de surréservation, et le
+  fait que le déclencheur voie bien la ligne écrite.
+
+### Su et dit
+
+- **Le déclencheur reste non mesuré, et la cause est identifiée** : un
+  formulaire qui collecte les adresses refuse les réponses construites par
+  script. La mesure demande une soumission à la main — le contrôle le dit
+  désormais en toutes lettres plutôt que de rapporter une exception muette.
+- **La largeur de la fenêtre de surréservation** reste inconnue. C'est elle
+  qui déterminera la marge à recommander par défaut, et elle ne se mesure
+  qu'avec deux fenêtres de navigateur.
+- Le banc reste à **190 assertions** et l'épreuve à **trente-cinq défauts** :
+  rien du produit n'a eu besoin d'être corrigé.
 ## [0.7.2] - 2026-09-18
 
 Deuxième lancement réel. Le rapport est devenu honnête — il dit « non mesuré »
