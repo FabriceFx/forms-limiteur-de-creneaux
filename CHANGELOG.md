@@ -3,6 +3,43 @@
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [0.7.2] - 2026-09-18
+
+Deuxième lancement réel. Le rapport est devenu honnête — il dit « non mesuré »
+au lieu de « démenti » —, mais **l’hypothèse centrale reste non vérifiée** et
+la même exception revient. Deux causes probables traitées, et de quoi savoir
+d’où elle vient si elle persiste.
+
+### Corrigé
+
+- **Tous les choix d’une question à navigation doivent porter une**
+  **destination**, pas seulement celui qui saute. Un seul choix navigant sur
+  deux donne « Invalid data updating form. » — la règle a été payée après
+  l’ordre des éléments, sur la même exception.
+- **Le contrôle du déclencheur nomme l’étape où il échoue.** « Invalid data
+  updating form. » ne dit pas d’où il vient, et un message sans lieu envoie
+  chercher partout. Il signale aussi qu’un formulaire collectant les adresses
+  refuse les réponses construites par l’API, et dit alors comment faire la même
+  mesure à la main.
+
+### Ajouté
+
+- **La vérification de `FormApp.PageNavigationType`.** Une énumération se
+  vérifie, elle ne se cite pas de mémoire : un nom inventé vaut `undefined` et
+  fait échouer l’appel sans dire pourquoi. Le contrôle de navigation refuse
+  désormais de partir si `CONTINUE` manque, plutôt que de lever une exception
+  muette de plus.
+
+### Su et dit
+
+- **`setChoiceValues` contre la navigation par section : toujours pas de**
+  **réponse.** Deux essais, deux échecs de construction du cas — aucun n’a
+  encore mesuré quoi que ce soit. Le refus que porte le produit depuis la
+  première version reste une hypothèse.
+- Le banc reste à **190 assertions** et l’épreuve à **trente-cinq défauts** :
+  les corrections sont dans le contrôle, que le banc ne charge pas — hors
+  `controleCas_`, qui l’est depuis la 0.7.1.
+
 ## [0.7.1] - 2026-09-18
 
 **Premier lancement réel dans Apps Script**, et il a trouvé quatre défauts — tous

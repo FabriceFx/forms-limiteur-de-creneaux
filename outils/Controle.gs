@@ -20,7 +20,7 @@
  * à la corbeille, et il n'envoie aucun courriel.
  */
 
-const CONTROLE_VERSION_ = '0.7.1';
+const CONTROLE_VERSION_ = '0.7.2';
 
 /**
  * Un cas : son nom, ce qu'on croyait, ce que Google répond.
@@ -74,11 +74,21 @@ const controleNavigation_ = (aJeter) => {
   // seconde page et naviguerait vers elle-même. Google répond « Invalid data
   // updating form. », et la première version du contrôle a pris ce refus pour
   // une réponse à la question posée.
+  if (!FormApp.PageNavigationType || !FormApp.PageNavigationType.CONTINUE) {
+    throw new Error('FormApp.PageNavigationType.CONTINUE n’existe pas dans cette '
+      + 'version de l’API : le contrôle ne peut pas construire une question à '
+      + 'navigation valide.');
+  }
+
   const question = formulaire.addMultipleChoiceItem().setTitle('Créneau');
   const page = formulaire.addPageBreakItem().setTitle('Seconde page');
+  // Chaque choix doit porter une destination, pas seulement celui qui saute :
+  // un seul choix navigant dans une question qui en compte deux donne « Invalid
+  // data updating form. ». Le premier essai réel a payé cette règle deux fois,
+  // après l'ordre des éléments.
   question.setChoices([
     question.createChoice('Avec saut', page),
-    question.createChoice('Sans saut'),
+    question.createChoice('Sans saut', FormApp.PageNavigationType.CONTINUE),
   ]);
 
   const avant = question.getChoices()
@@ -103,34 +113,67 @@ const controleNavigation_ = (aJeter) => {
  * de temps on a attendu, pour qu'on puisse en juger.
  */
 const controleDeclencheur_ = (attenteMs) => {
-  const feuille = limiteurFeuilleDesReponses_();
-  const formulaire = limiteurOuvrirLeFormulaire_(feuille);
-  const reglages = limiteurReglages_();
-  const element = limiteurTrouverLaQuestion_(
-    formulaire, reglages['Question des créneaux (titre exact)']);
-  const question = limiteurQuestionTypee_(element);
-  const choix = question.getChoices();
-  if (choix.length === 0) return { possible: false, raison: 'aucune option à choisir' };
+  // L'étape est nommée avant chaque appel : « Invalid data updating form. » ne
+  // dit pas d'où il vient, et un message sans lieu envoie chercher partout.
+  const suivi = { etape: 'lecture de la feuille des réponses' };
+  try {
+    const feuille = limiteurFeuilleDesReponses_();
 
-  const avant = SocleFeuilles.lireTable(LIMITEUR_ONGLET_JOURNAL_).lignes.length;
-  const lignesAvant = SocleFeuilles.lireTable(feuille).lignes.length;
+    suivi.etape = 'ouverture du formulaire';
+    const formulaire = limiteurOuvrirLeFormulaire_(feuille);
 
-  const reponse = formulaire.createResponse();
-  reponse.withItemResponse(question.createResponse(choix[0].getValue()));
-  reponse.submit();
+    suivi.etape = 'lecture des réglages';
+    const reglages = limiteurReglages_();
 
-  Utilities.sleep(attenteMs);
+    suivi.etape = 'identification de la question des créneaux';
+    const element = limiteurTrouverLaQuestion_(
+      formulaire, reglages['Question des créneaux (titre exact)']);
+    const question = limiteurQuestionTypee_(element);
 
-  const lignesApres = SocleFeuilles.lireTable(feuille).lignes.length;
-  const apres = SocleFeuilles.lireTable(LIMITEUR_ONGLET_JOURNAL_).lignes.length;
+    suivi.etape = 'lecture des options';
+    const choix = question.getChoices();
+    if (choix.length === 0) {
+      return { possible: false, raison: 'le formulaire ne propose plus aucune option' };
+    }
 
-  return {
-    possible: true,
-    attenteMs,
-    ligneEcrite: lignesApres > lignesAvant,
-    journalAlimente: apres > avant,
-    creneau: choix[0].getValue(),
-  };
+    // Un formulaire qui collecte les adresses refuse les réponses construites
+    // par l'API : elles n'ont aucune adresse à produire. Le dire AVANT de
+    // tenter, plutôt que de rapporter une exception qu'on ne saurait pas lire.
+    suivi.etape = 'vérification de la collecte des adresses';
+    const collecte = typeof formulaire.collectsEmail === 'function'
+      && formulaire.collectsEmail();
+
+    suivi.etape = 'comptage avant soumission';
+    const avant = SocleFeuilles.lireTable(LIMITEUR_ONGLET_JOURNAL_).lignes.length;
+    const lignesAvant = SocleFeuilles.lireTable(feuille).lignes.length;
+
+    suivi.etape = 'construction de la réponse';
+    const reponse = formulaire.createResponse();
+    reponse.withItemResponse(question.createResponse(choix[0].getValue()));
+
+    suivi.etape = 'soumission de la réponse';
+    reponse.submit();
+
+    suivi.etape = 'attente puis relecture';
+    Utilities.sleep(attenteMs);
+    const lignesApres = SocleFeuilles.lireTable(feuille).lignes.length;
+    const apres = SocleFeuilles.lireTable(LIMITEUR_ONGLET_JOURNAL_).lignes.length;
+
+    return {
+      possible: true,
+      attenteMs,
+      collecte,
+      ligneEcrite: lignesApres > lignesAvant,
+      journalAlimente: apres > avant,
+      creneau: choix[0].getValue(),
+    };
+  } catch (erreur) {
+    return {
+      possible: false,
+      etape: suivi.etape,
+      raison: `${erreur.message || erreur} — à l'étape « ${suivi.etape} »`,
+    };
+  }
 };
 
 /**
@@ -165,6 +208,12 @@ function controlerEnConditionsReelles() {
     () => SocleFeuilles.onglet('Contrôle — bac').feuille.getFormUrl() === null));
 
   // --- Les trois hypothèses qui portent du code de refus -------------------
+
+  cas.push(controleCas_(
+    'FormApp.PageNavigationType porte CONTINUE, GO_TO_PAGE, RESTART, SUBMIT',
+    true,
+    () => ['CONTINUE', 'GO_TO_PAGE', 'RESTART', 'SUBMIT']
+      .every((nom) => FormApp.PageNavigationType[nom] !== undefined)));
 
   cas.push(controleCas_(
     'setChoiceValues efface la navigation par section',
@@ -261,9 +310,16 @@ function controlerEnConditionsReelles() {
   lignes.push('', 'Déclencheur de soumission :');
   if (!declencheur.possible) {
     lignes.push(`    non mesuré — ${declencheur.raison}`);
+    if (declencheur.etape === 'soumission de la réponse') {
+      lignes.push('    Un formulaire qui collecte les adresses refuse les réponses');
+      lignes.push('    construites par l’API. Remplissez-en une à la main, puis');
+      lignes.push('    regardez si l’onglet « Journal » s’est alimenté : c’est la');
+      lignes.push('    même mesure, faite par le bon chemin.');
+    }
   } else {
     lignes.push(`    réponse soumise sur « ${declencheur.creneau} », attente `
       + `${declencheur.attenteMs / 1000} s`);
+    lignes.push(`    collecte des adresses : ${declencheur.collecte ? 'oui' : 'non'}`);
     lignes.push(`    ligne écrite dans la feuille : ${declencheur.ligneEcrite ? 'oui' : 'non'}`);
     lignes.push(`    Journal alimenté : ${declencheur.journalAlimente ? 'oui' : 'non'}`);
     lignes.push('    Indication et non preuve : un déclencheur lent ressemble à un');
