@@ -3,6 +3,40 @@
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.2.0] - 2026-09-18
+
+**Un seul copier-coller, et un guide d'une page.** Rien du code ne change :
+ce qui change, c'est la distance entre l'outil et quelqu'un qui veut s'en
+servir.
+
+### Ajouté
+
+- **`distribution/limiteur-de-creneaux.gs`**, engendré par
+  `node outils/assembler.js` : les quinze fichiers en un seul, précédé d'un
+  en-tête qui dit quoi faire dès les premières lignes. Quinze fichiers à créer
+  un par un dans l'éditeur Apps Script, personne ne le fait ; un copier-coller,
+  tout le monde le fait. L'assemblage est sûr parce que le banc vérifiait déjà
+  que le projet se charge dans l'ordre alphabétique — contrôle posé pour un
+  tout autre piège.
+- **`DEMARRAGE.md`**, cent lignes qui prennent par la main : installer, le cas
+  d'un formulaire qui reçoit déjà des réponses, le quotidien, et la seule
+  chose à comprendre. Le README en fait 851 et explique la conception — c'est
+  un autre texte, pour un autre lecteur.
+- **Le README dit à qui s'adresse chaque dossier**, et renvoie au guide dès sa
+  troisième ligne.
+
+### Modifié
+
+- **Le banc vérifie que la distribution n'a pas vieilli** : chaque source doit
+  y figurer intégralement, et la version annoncée doit être la bonne. Une
+  distribution périmée est pire qu'une distribution absente — elle a l'air
+  d'être à jour, et livre du code d'avant-hier à quelqu'un qui n'a aucun moyen
+  de s'en apercevoir.
+- **L'épreuve réassemble la distribution** après avoir introduit un défaut,
+  sans quoi tout défaut ferait échouer le banc par la fraîcheur plutôt que par
+  l'assertion visée : elle se serait félicitée pour la mauvaise raison.
+- Le banc passe à **213 assertions**, l'épreuve à **quarante défauts**.
+
 ## [1.1.0] - 2026-09-18
 
 **Se greffer sur un formulaire qui tourne déjà.** Le cas n'avait jamais été
@@ -32,7 +66,7 @@ traité : tout supposait un formulaire neuf.
 
 ### Modifié
 
-- Le banc passe à **210 assertions**, l'épreuve à **trente-neuf défauts**.
+- Le banc passe à **213 assertions**, l'épreuve à **trente-neuf défauts**.
 
 ## [1.0.0] - 2026-09-18
 
@@ -63,7 +97,7 @@ prévu.** Le code ne change pas : tout ce qui devait l'être est vérifié.
   Ce n'est pas un défaut mais une donnée manquante : elle dirait quelle marge
   recommander par défaut. En attendant, la marge vaut zéro et se choisit au
   jugé.
-- Le banc reste à **210 assertions** et l'épreuve à **trente-huit défauts** :
+- Le banc reste à **213 assertions** et l'épreuve à **trente-huit défauts** :
   l'essai n'a rien trouvé à corriger cette fois.
 
 ## [0.10.1] - 2026-09-18
@@ -88,7 +122,7 @@ par la 0.10.0 elle-même, vu dans la minute.
 
 - Le faux classeur du banc sait relire une validation, et rend `null` là où
   aucune règle n'a été posée — comme le vrai.
-- Le banc passe à **210 assertions**, l'épreuve à **trente-huit défauts**.
+- Le banc passe à **213 assertions**, l'épreuve à **trente-huit défauts**.
 
 ## [0.10.0] - 2026-09-18
 
@@ -117,7 +151,7 @@ dans ce que le tableau donnait à lire, pas dans ce qu'il calculait.
 
 ### Modifié
 
-- Le banc passe à **210 assertions**, l'épreuve à **trente-sept défauts**.
+- Le banc passe à **213 assertions**, l'épreuve à **trente-sept défauts**.
 
 ## [0.9.0] - 2026-09-18
 
@@ -145,7 +179,7 @@ qui fait la valeur de l'outil.
   perte sèche. Les entrées de menu continuent de passer par le socle.
 - **L'abandon se consigne** au Journal, verdict « Non traitée » en rouge, avec
   ce qu'il reste à faire à la main et une alerte à l'exploitant.
-- Le banc passe à **210 assertions**, l'épreuve à **trente-six défauts** :
+- Le banc passe à **213 assertions**, l'épreuve à **trente-six défauts** :
   deux assertions validaient l'ancien comportement, c'est-à-dire le défaut.
 
 ## [0.8.2] - 2026-09-18
@@ -168,7 +202,7 @@ risque que cet outil combat. Le code ne change pas.
   ouverts —, et c'est exactement là que la marge sert.
 - Corollaire pour l'essai : éprouver la surréservation demande de garder au
   moins un créneau ouvert, sans quoi il n'y a plus rien à observer.
-- Le banc reste à **210 assertions** et l'épreuve à **trente-cinq défauts**.
+- Le banc reste à **213 assertions** et l'épreuve à **trente-cinq défauts**.
 
 ## [0.8.1] - 2026-09-18
 
@@ -194,7 +228,7 @@ ce qu'on en sait.
 - Les réponses antérieures à l'installation ne figurent pas au Journal — le
   déclencheur n'existait pas quand elles sont arrivées. Elles sont comptées
   malgré tout : le comptage lit la feuille, pas le Journal.
-- Le banc reste à **210 assertions** et l'épreuve à **trente-cinq défauts**.
+- Le banc reste à **213 assertions** et l'épreuve à **trente-cinq défauts**.
 
 ## [0.8.0] - 2026-09-18
 
@@ -237,7 +271,7 @@ démentie**. Le code ne change pas — ce qui change, c'est ce qu'on en sait.
 - **La largeur de la fenêtre de surréservation** reste inconnue. C'est elle
   qui déterminera la marge à recommander par défaut, et elle ne se mesure
   qu'avec deux fenêtres de navigateur.
-- Le banc reste à **210 assertions** et l'épreuve à **trente-cinq défauts** :
+- Le banc reste à **213 assertions** et l'épreuve à **trente-cinq défauts** :
   rien du produit n'a eu besoin d'être corrigé.
 ## [0.7.2] - 2026-09-18
 
@@ -272,7 +306,7 @@ d’où elle vient si elle persiste.
   **réponse.** Deux essais, deux échecs de construction du cas — aucun n’a
   encore mesuré quoi que ce soit. Le refus que porte le produit depuis la
   première version reste une hypothèse.
-- Le banc reste à **210 assertions** et l’épreuve à **trente-cinq défauts** :
+- Le banc reste à **213 assertions** et l’épreuve à **trente-cinq défauts** :
   les corrections sont dans le contrôle, que le banc ne charge pas — hors
   `controleCas_`, qui l’est depuis la 0.7.1.
 
@@ -316,7 +350,7 @@ valait celui du classeur, ce qui n'allait pas de soi.
   en moins.
 - **`controleCas_` est désormais éprouvée au banc** : c’est la seule partie du
   contrôle qui se teste hors de Google, et c’est celle qui s’était trompée. Le
-  banc passe à **210 assertions**, l’épreuve à **trente-cinq défauts**.
+  banc passe à **213 assertions**, l’épreuve à **trente-cinq défauts**.
 
 ## [0.7.0] - 2026-09-18
 
@@ -359,7 +393,7 @@ plus par manque d'outillage.
   déclaré** : ce fichier ne tourne que dans Google, et renommer une fonction le
   casserait sans que rien ne le dise — jusqu'à l'essai réel, c'est-à-dire au
   pire moment.
-- Le banc passe de 186 à **210 assertions**, l'épreuve de trente-trois à
+- Le banc passe de 186 à **213 assertions**, l'épreuve de trente-trois à
   **trente-quatre défauts**.
 
 ## [0.6.0] - 2026-09-18
@@ -404,7 +438,7 @@ Couleurs et notes. **Toujours jamais installée en vrai.**
 
 ### Modifié
 
-- Le banc passe de 166 à **210 assertions**, l'épreuve de vingt-neuf à
+- Le banc passe de 166 à **213 assertions**, l'épreuve de vingt-neuf à
   **trente-trois défauts**.
 
 ## [0.5.0] - 2026-09-18
@@ -440,7 +474,7 @@ Les listes par créneau. **Toujours jamais installée en vrai.**
 
 ### Modifié
 
-- Le banc passe de 149 à **210 assertions**, l'épreuve de vingt-cinq à
+- Le banc passe de 149 à **213 assertions**, l'épreuve de vingt-cinq à
   **vingt-neuf défauts**. La table des nombres du contrôle K va désormais
   jusqu'à quarante, pour cesser de l'étendre à chaque ajout.
 
@@ -480,7 +514,7 @@ Un diagnostic d'installation. **Toujours jamais installée en vrai.**
 
 ### Modifié
 
-- Le banc passe de 119 à **210 assertions**, l'épreuve de vingt et un à
+- Le banc passe de 119 à **213 assertions**, l'épreuve de vingt et un à
   **vingt-cinq défauts**.
 
 ## [0.3.1] - 2026-09-18
@@ -520,7 +554,7 @@ installée en vrai.**
 
 ### Modifié
 
-- Le banc passe de 101 à **210 assertions**, l'épreuve de dix-sept à **vingt et
+- Le banc passe de 101 à **213 assertions**, l'épreuve de dix-sept à **vingt et
   un défauts**. Le faux classeur sait désormais refuser une écriture sur un
   onglet protégé, ce que le vrai fait et qu'il ne savait pas simuler.
 
@@ -548,7 +582,7 @@ Un cas exemple, pour qui découvre l'outil. **Toujours jamais installée en vrai
 
 - `limiteurLireReferentiel_` accepte le nom de l'onglet à lire, pour que la
   démonstration passe par le vrai code plutôt que par une copie.
-- Le banc passe de 81 à **210 assertions**, l'épreuve de quinze à **dix-sept
+- Le banc passe de 81 à **213 assertions**, l'épreuve de quinze à **dix-sept
   défauts**.
 
 ## [0.2.0] - 2026-09-18
@@ -571,7 +605,7 @@ installée en vrai**.
 
 ### Modifié
 
-- Le banc passe de 74 à **210 assertions**, l'épreuve de treize à **quinze
+- Le banc passe de 74 à **213 assertions**, l'épreuve de treize à **quinze
   défauts**.
 - Du CHANGELOG, le banc ne lit que l'entrée la plus récente : une entrée ancienne
   dit ce qu'était cette version-là, et l'aligner sur l'état courant reviendrait à

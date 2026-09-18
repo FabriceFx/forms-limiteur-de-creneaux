@@ -9,6 +9,18 @@
 Retire d'un formulaire Google les créneaux dont toutes les places sont prises,
 et les remet quand une place se libère.
 
+> **Vous voulez simplement vous en servir ?** Le guide
+> **[DEMARRAGE.md](DEMARRAGE.md)** vous prend par la main en dix minutes. Ce
+> README-ci explique comment l'outil est fait et pourquoi — utile pour
+> l'évaluer ou le reprendre, inutile pour l'installer.
+>
+> | Dossier | À qui il s'adresse |
+> |---|---|
+> | `distribution/` | à vous : **un seul fichier à coller** dans Apps Script |
+> | `apps-script/` | les sources, si vous voulez modifier l'outil |
+> | `banc/` | les essais hors de Google |
+> | `outils/` | l'assembleur, et le contrôle en conditions réelles |
+
 Écrit pour les inscriptions à places comptées : visites, permanences, ateliers,
 entretiens. Google Forms sait fermer un formulaire après un nombre total de
 réponses — c'est une nouveauté de janvier 2026 — mais ne sait pas plafonner
@@ -396,7 +408,7 @@ tient pas à ma parole.
 node banc/test.js
 ```
 
-210 assertions, hors de Google. Les faux services refusent ce que les vrais
+213 assertions, hors de Google. Les faux services refusent ce que les vrais
 refusent : une question à choix sans aucune option, une conversion de type
 impossible, une feuille liée à aucun formulaire, un envoi sans destinataire.
 
@@ -406,7 +418,7 @@ Le banc s'éprouve lui-même :
 node banc/epreuve.js
 ```
 
-Il réintroduit **trente-neuf défauts réels** dans une copie du projet — l'adoption des
+Il réintroduit **quarante défauts réels** dans une copie du projet — l'adoption des
 options nouvelles supprimée, le refus de la navigation par section levé, la
 réouverture rendue aveugle, la marge appliquée au verdict, le quota d'envoi plus
 lu, un formulaire ouvert par identifiant — et vérifie que le banc échoue sur
@@ -801,7 +813,7 @@ Only one occurrence appears (`FormApp.openByUrl` in `Formulaire.gs`), using the 
 node banc/test.js
 ```
 
-210 assertions outside Google's environment. Mock services replicate Google's constraints: rejecting empty choice questions, invalid type conversions, sheets without linked forms, or emails without recipients.
+213 assertions outside Google's environment. Mock services replicate Google's constraints: rejecting empty choice questions, invalid type conversions, sheets without linked forms, or emails without recipients.
 
 The test suite tests itself:
 
@@ -809,7 +821,7 @@ The test suite tests itself:
 node banc/epreuve.js
 ```
 
-It introduces **thirty-nine deliberate defects** into a project copy (bypassing option adoption, removing section-navigation refusal, blinding the reopening logic, applying margins to verdicts, skipping quota checks, opening forms by ID) and verifies that the bench fails on each. A test suite that remains green against regressions proves nothing.
+It introduces **forty deliberate defects** into a project copy (bypassing option adoption, removing section-navigation refusal, blinding the reopening logic, applying margins to verdicts, skipping quota checks, opening forms by ID) and verifies that the bench fails on each. A test suite that remains green against regressions proves nothing.
 
 Syntax checking across all merged files (detecting global scope conflicts):
 

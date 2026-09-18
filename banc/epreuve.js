@@ -157,11 +157,15 @@ const DEFAUTS = [
       + '    LIMITEUR_COLONNES_VERIFICATION_);\n'
       + '  limiteurExigerOngletANous_(LIMITEUR_ONGLET_LISTES_, LIMITEUR_LISTES_AVANT_);',
     ''],
+  ['la distribution a vieilli sans qu’on la réassemble',
+    'distribution/limiteur-de-creneaux.gs',
+    'const LIMITEUR_ONGLET_LISTES_ = \'Listes\';',
+    'const LIMITEUR_ONGLET_LISTES_ = \'Listes anciennes\';'],
   ['le nombre d’assertions annoncé n’est plus celui du banc', 'README.md',
-    '210 assertions, hors de Google', '74 assertions, hors de Google'],
+    '213 assertions, hors de Google', '74 assertions, hors de Google'],
   ['le README anglais annonce un autre nombre de défauts que le français',
     'README.md',
-    '**thirty-nine deliberate defects**', '**thirteen deliberate defects**'],
+    '**forty deliberate defects**', '**thirteen deliberate defects**'],
   ['les colonnes calculées ne sont plus vérifiées contiguës', 'apps-script/Limiteur.gs',
     '  if (fin - debut !== 3) {',
     '  if (false) {'],
@@ -184,6 +188,18 @@ DEFAUTS.forEach(([nom, fichier, avant, apres]) => {
     return;
   }
   fs.writeFileSync(cible, texte.replace(avant, apres));
+
+  // La distribution est engendrée depuis les sources : on la réassemble après
+  // avoir introduit le défaut, sinon le banc échouerait sur sa fraîcheur plutôt
+  // que sur ce qu'on voulait éprouver. Sauf quand c'est ELLE qu'on abîme.
+  if (!fichier.startsWith('distribution/')) {
+    try {
+      execFileSync('node', [path.join(bac, 'outils', 'assembler.js')], { stdio: 'pipe' });
+    } catch (erreur) {
+      // Un défaut peut casser la syntaxe : l'assembleur refuse alors de livrer,
+      // et le banc échouera de son côté. C'est un résultat, pas un incident.
+    }
+  }
 
   try {
     execFileSync('node', [path.join(bac, 'banc', 'test.js')], { stdio: 'pipe' });

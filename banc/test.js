@@ -624,6 +624,38 @@ section('A. Intégrité du projet');
       + 'const fléchée, invisible du menu d’exécution');
   });
 
+  // `distribution/limiteur-de-creneaux.gs` est le fichier que les gens collent
+  // dans leur éditeur. Il est engendré, donc il dérive dès qu'on touche aux
+  // sources sans relancer l'assembleur — et **une distribution périmée est pire
+  // qu'une distribution absente** : elle a l'air d'être à jour, et livre du code
+  // d'avant-hier à quelqu'un qui n'a aucun moyen de s'en apercevoir.
+  {
+    const chemin = path.join(RACINE, 'distribution', 'limiteur-de-creneaux.gs');
+    if (!fs.existsSync(chemin)) {
+      verifier(false, 'distribution/limiteur-de-creneaux.gs existe — lancez '
+        + 'node outils/assembler.js');
+    } else {
+      const livre = fs.readFileSync(chemin, 'utf8');
+
+      const perimes = sources.filter((nom) => !livre.includes(
+        fs.readFileSync(path.join(DOSSIER, nom), 'utf8').trimEnd()));
+      egal(perimes, [], 'chaque fichier source figure intégralement dans la '
+        + 'distribution — relancez node outils/assembler.js après toute '
+        + 'modification');
+
+      const annoncee = /^\/\/ Limiteur de créneaux pour Google Forms — version (\S+)$/m
+        .exec(livre);
+      egal(annoncee && annoncee[1], declaree,
+        'et elle annonce la version courante : un numéro faux sur le fichier '
+        + 'qu’on distribue est le seul moyen de ne pas savoir ce qui tourne');
+
+      verifier(/installerLeLimiteur/.test(livre.slice(0, 2000)),
+        'son en-tête dit quoi faire dès les premières lignes — personne ne lit '
+        + '4 000 lignes pour trouver par où commencer');
+    }
+  }
+
+
   const menu = fs.readFileSync(path.join(DOSSIER, 'Menu.gs'), 'utf8');
   const appelees = [...menu.matchAll(/addItem\('[^']*', '([^']+)'\)/g)].map((m) => m[1]);
   const declarees = [...menu.matchAll(/^function\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]);
@@ -1676,7 +1708,10 @@ section('Q. Se greffer sur un classeur qui vit déjà');
   leve(() => occupe.lire('limiteurInstaller_()'), /existe déjà dans ce classeur/,
     'un onglet « Aide » qui ne vient pas du limiteur fait refuser l’installation');
   verifier(/Renommez l’onglet existant/.test(
-    (() => { try { occupe.lire('limiteurInstaller_()'); return ''; } catch (e) { return e.message; } })()),
+    (() => {
+      try { occupe.lire('limiteurInstaller_()'); return ''; }
+      catch (e) { return e.message; }
+    })()),
     'et le message dit quoi faire, sans décider à la place de personne');
 
   egal(occupe.feuilles.Aide.getRange(2, 1).getValue(), 'Ouverture des locaux',

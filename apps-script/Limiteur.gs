@@ -25,7 +25,7 @@
  * retenues et celles en dépassement — c'est dit dans l'onglet d'aide.
  */
 
-const LIMITEUR_VERSION_ = '1.1.0';
+const LIMITEUR_VERSION_ = '1.2.0';
 
 /**
  * Combien de temps une soumission attend le verrou avant d'abandonner.
@@ -415,7 +415,8 @@ const limiteurExigerOngletANous_ = (nom, entete) => {
 
   throw SocleErreurs.erreur({
     quoi: `L'onglet « ${nom} » existe déjà dans ce classeur, et il ne vient pas du `
-      + `limiteur : sa première ligne porte « ${presente.filter((une) => une !== '').join(', ')} ».`,
+      + `limiteur : sa première ligne porte `
+      + `« ${presente.filter((une) => une !== '').join(', ')} ».`,
     quoiFaire: `Le limiteur réécrit entièrement l'onglet « ${nom} » à chaque fois, `
       + 'et effacerait donc ce qu’il contient. Renommez l’onglet existant, puis '
       + 'relancez — rien n’a été modifié.',
