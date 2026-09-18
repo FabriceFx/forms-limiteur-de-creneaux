@@ -38,8 +38,24 @@ une place qu'il n'a pas serait pire qu'un outil absent.
 Deux parades, et il faut les deux :
 
 - la **marge**, qui retire l'option avant la dernière place — à 1, le créneau
-  disparaît du formulaire alors qu'il reste encore une place en réserve ;
+  disparaît du formulaire alors qu'il reste encore une place en réserve. L'onglet
+  « Créneaux » l'annonce alors **« Complet par la marge »** et non « Complet » :
+  sans ce mot, une colonne « Restant » à 1 en face d'un « Complet » se lit comme
+  une contradiction, et envoie chercher un défaut de calcul qui n'existe pas ;
 - le **verdict**, qui dit la vérité même quand l'affichage a menti.
+
+### Deux soumissions à la même seconde
+
+Une soumission qui arrive pendant qu'une autre est traitée **attend** son tour,
+vingt-cinq secondes durant. Au-delà, elle abandonne — et l'abandon se consigne au
+Journal, verdict « Non traitée », avec une alerte.
+
+Le comptage, lui, se rattrape tout seul au recomptage suivant : il lit la feuille
+des réponses, pas le Journal. Ce qui est perdu, c'est le **verdict** — donc
+personne ne sait si cette personne dépassait la capacité, et aucun message ne lui
+est parti. C'est pourquoi l'abandon ne passe jamais en silence : la ligne rouge
+du Journal est la seule trace qui permette de rattraper à la main, par l'onglet
+« Listes ».
 
 ### Quand tout est complet, le risque disparaît
 
@@ -338,7 +354,7 @@ tient pas à ma parole.
 node banc/test.js
 ```
 
-190 assertions, hors de Google. Les faux services refusent ce que les vrais
+197 assertions, hors de Google. Les faux services refusent ce que les vrais
 refusent : une question à choix sans aucune option, une conversion de type
 impossible, une feuille liée à aucun formulaire, un envoi sans destinataire.
 
@@ -348,7 +364,7 @@ Le banc s'éprouve lui-même :
 node banc/epreuve.js
 ```
 
-Il réintroduit **trente-cinq défauts réels** dans une copie du projet — l'adoption des
+Il réintroduit **trente-sept défauts réels** dans une copie du projet — l'adoption des
 options nouvelles supprimée, le refus de la navigation par section levé, la
 réouverture rendue aveugle, la marge appliquée au verdict, le quota d'envoi plus
 lu, un formulaire ouvert par identifiant — et vérifie que le banc échoue sur
@@ -480,8 +496,25 @@ Hence the core architecture: **truth is determined upon receipt, not at display 
 
 Two safeguards work together:
 
-- the **margin**, which removes the option before the last spot is taken — with a margin of 1, the slot disappears from the form while one buffer spot remains;
+- the **margin**, which removes the option before the last spot is taken — with
+  a margin of 1, the slot disappears from the form while one buffer spot remains.
+  The "Créneaux" sheet then labels it **"Complet par la marge"** (Full by
+  margin) rather than "Complet": without this distinction, a "Restant"
+  (Remaining) column showing 1 next to "Complet" looks contradictory and prompts
+  a search for a non-existent calculation bug;
 - the **verdict**, which enforces reality even when the display lagged behind.
+
+### Two submissions in the same second
+
+A submission arriving while another is being processed **waits** its turn for up
+to twenty-five seconds. Beyond that, it gives up — and the failure is logged in
+the Journal with the verdict "Non traitée" (Unprocessed) and an operator alert.
+
+The tally catches up on its own upon the next recount: it reads the response
+sheet, not the Journal. What is lost is the **verdict** — meaning no one knows
+whether this registrant exceeded capacity, and no email was sent to them. This
+is why an aborted run never happens silently: the red row in the Journal is the
+sole trace allowing manual resolution via the "Listes" tab.
 
 ### When all slots are full, the risk disappears
 
@@ -701,7 +734,7 @@ Only one occurrence appears (`FormApp.openByUrl` in `Formulaire.gs`), using the 
 node banc/test.js
 ```
 
-190 assertions outside Google's environment. Mock services replicate Google's constraints: rejecting empty choice questions, invalid type conversions, sheets without linked forms, or emails without recipients.
+197 assertions outside Google's environment. Mock services replicate Google's constraints: rejecting empty choice questions, invalid type conversions, sheets without linked forms, or emails without recipients.
 
 The test suite tests itself:
 
@@ -709,7 +742,7 @@ The test suite tests itself:
 node banc/epreuve.js
 ```
 
-It introduces **thirty-five deliberate defects** into a project copy (bypassing option adoption, removing section-navigation refusal, blinding the reopening logic, applying margins to verdicts, skipping quota checks, opening forms by ID) and verifies that the bench fails on each. A test suite that remains green against regressions proves nothing.
+It introduces **thirty-seven deliberate defects** into a project copy (bypassing option adoption, removing section-navigation refusal, blinding the reopening logic, applying margins to verdicts, skipping quota checks, opening forms by ID) and verifies that the bench fails on each. A test suite that remains green against regressions proves nothing.
 
 Syntax checking across all merged files (detecting global scope conflicts):
 

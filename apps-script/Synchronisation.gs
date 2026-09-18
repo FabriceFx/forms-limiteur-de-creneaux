@@ -396,13 +396,81 @@ const limiteurSignalerLEchec_ = (ligne, erreur) => {
  */
 const limiteurSousFilet_ = (ligne) => {
   try {
-    const sous = SocleExecution.sousVerrou(() => limiteurTraiterLaSoumission_(ligne));
-    // Verrou occupé : ce n'est pas un échec. L'exécution qui le détient
-    // recomptera tout, y compris cette ligne-ci.
-    if (!sous.pris) return { fait: false, occupe: true, message: sous.message };
-    return { fait: true, valeur: sous.valeur };
+    // On n'emprunte PAS `SocleExecution.sousVerrou` ici, et c'est délibéré : il
+    // pose `tryLock(0)` et rend la main aussitôt. Pour une entrée de menu c'est
+    // juste — quelqu'un est devant l'écran et relancera. Pour une soumission,
+    // c'est une perte sèche : la réponse ne recevra jamais de verdict, donc ni
+    // ligne au Journal, ni courriel. Une personne en dépassement croirait avoir
+    // une place.
+    //
+    // Payé en conditions réelles le 18 septembre 2026 : « Soumission ligne 10 :
+    // Une exécution est déjà en cours sur ce document. » Le commentaire d'alors
+    // affirmait que l'exécution tenant le verrou recompterait cette ligne. C'est
+    // vrai du comptage, et faux du verdict — elle avait déjà lu la feuille.
+    const verrou = LockService.getDocumentLock() || LockService.getScriptLock();
+    if (!verrou) {
+      throw SocleErreurs.erreur({
+        quoi: 'Aucun verrou n’est disponible dans ce contexte.',
+        quoiFaire: 'Relancez depuis un projet lié à un classeur.',
+      });
+    }
+
+    if (!verrou.tryLock(LIMITEUR_ATTENTE_VERROU_MS_)) {
+      return limiteurSignalerLAbandon_(ligne);
+    }
+    try {
+      return { fait: true, valeur: limiteurTraiterLaSoumission_(ligne) };
+    } finally {
+      verrou.releaseLock();
+    }
   } catch (erreur) {
     console.error(`Limiteur de créneaux, ligne ${ligne} : ${erreur.stack || erreur}`);
     return limiteurSignalerLEchec_(ligne, erreur);
   }
+};
+
+/**
+ * La soumission qu'on n'a pas pu traiter, faute d'avoir obtenu le verrou.
+ *
+ * Elle se consigne, parce qu'elle a une conséquence : les créneaux se
+ * rétabliront au prochain recomptage — le comptage lit la feuille — mais **le
+ * verdict, lui, est perdu**. Personne ne saura que cette personne dépassait la
+ * capacité si elle la dépassait, et elle n'aura reçu aucun message.
+ *
+ * Une ligne rouge au Journal vaut mieux qu'un silence : c'est la seule trace
+ * qui permette de rattraper à la main.
+ */
+const limiteurSignalerLAbandon_ = (ligne) => {
+  const quoiFaire = 'Cette réponse sera comptée dans les créneaux au prochain '
+    + 'recomptage, mais elle n’a reçu aucun verdict et aucun message n’est parti. '
+    + 'Ouvrez « Établir les listes » pour voir le rang de cette personne : si elle '
+    + 'est en liste d’attente, prévenez-la vous-même.';
+
+  const destinataire = limiteurDestinataireDesAlertes_();
+  const envoi = SocleErreurs.absorber('alerte d’abandon', () => {
+    if (destinataire === '') return { envoye: false, motif: 'aucun destinataire connu' };
+    SocleCourriel.erreur({
+      a: destinataire,
+      quoi: `Une réponse (ligne ${ligne}) n’a pas pu être traitée : une autre `
+        + 'soumission occupait le document.',
+      quoiFaire,
+      cause: `Verrou indisponible après ${LIMITEUR_ATTENTE_VERROU_MS_ / 1000} s.`,
+      cle: 'abandon:verrou',
+      source: 'Limiteur de créneaux',
+    });
+    return { envoye: true, motif: '' };
+  }, { envoye: false, motif: 'l’envoi lui-même a échoué' });
+
+  limiteurJournaliserLEchec_({
+    Horodatage: SocleErreurs.absorber('horodatage de l’abandon',
+      () => SocleDates.maintenantHorodatage(), ''),
+    Ligne: ligne === null ? '' : ligne,
+    Verdict: LIMITEUR_VERDICTS_.nonTraitee,
+    Destinataire: destinataire,
+    Courriel: envoi.envoye ? 'alerte envoyée' : `non (${envoi.motif})`,
+    'Ce qui a échoué': `Une autre soumission occupait le document plus de `
+      + `${LIMITEUR_ATTENTE_VERROU_MS_ / 1000} s. ${quoiFaire}`,
+  });
+
+  return { fait: false, abandon: true, ligne, quoiFaire };
 };

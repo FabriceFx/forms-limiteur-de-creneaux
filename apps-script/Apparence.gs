@@ -64,6 +64,7 @@ const limiteurHabillage_ = () => [
     sens: {
       Ouvert: 'bon',
       Complet: 'fini',
+      'Complet par la marge': 'fini',
       'Fermé à la main': 'fini',
       'Sans capacité': 'aTraiter',
     },
@@ -78,6 +79,7 @@ const limiteurHabillage_ = () => [
       'Sans capacité': 'inconnu',
       'Hors référentiel': 'agir',
       Échec: 'agir',
+      'Non traitée': 'agir',
     },
   },
   {
@@ -120,7 +122,10 @@ const limiteurNotes_ = () => ({
       + 'acceptée. Vide, c’est le réglage « Marge par défaut » qui s’applique.',
     Pris: 'Calculé. Inscriptions comptées dans la feuille des réponses.\n\n'
       + 'Supprimer une ligne de cette feuille rend la place.',
-    Restant: 'Calculé : Places moins Pris.',
+    Restant: 'Calculé : Places moins Pris.\n\n'
+      + 'Un créneau peut être retiré du formulaire alors qu’il reste des places : '
+      + 'c’est la marge qui l’a fermé en avance. La colonne « État » le dit — '
+      + '« Complet par la marge » plutôt que « Complet ».',
     'État': 'Calculé à chaque recomptage — sauf « Fermé à la main », que vous '
       + 'pouvez écrire vous-même.\n\n'
       + 'Le code ne défait jamais cette mention : le créneau reste retiré du '

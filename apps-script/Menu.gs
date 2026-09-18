@@ -273,7 +273,10 @@ const limiteurResumerLaVerification_ = (bilan) => {
 
 /** Le résumé d'une synchronisation, en quelques lignes. */
 const limiteurResumer_ = (bilan) => {
-  const complets = bilan.creneaux.filter((c) => c.etat === LIMITEUR_ETATS_.complet);
+  const complets = bilan.creneaux.filter((c) => c.etat === LIMITEUR_ETATS_.complet
+    || c.etat === LIMITEUR_ETATS_.completParMarge);
+  const parMarge = bilan.creneaux.filter(
+    (c) => c.etat === LIMITEUR_ETATS_.completParMarge);
   const sansCapacite = bilan.creneaux.filter(
     (c) => c.etat === LIMITEUR_ETATS_.sansCapacite);
   const inconnus = Object.keys(bilan.inconnus);
@@ -283,6 +286,11 @@ const limiteurResumer_ = (bilan) => {
     `${bilan.affiches.length} créneau(x) proposé(s), ${complets.length} complet(s).`,
   ];
 
+  // Sans ce mot, on cherche un défaut de calcul là où il n'y en a pas.
+  if (parMarge.length > 0) {
+    lignes.push(`Dont ${parMarge.length} fermé(s) par la marge, alors qu’il y reste `
+      + 'des places — c’est ce que la marge sert à faire.');
+  }
   if (bilan.pose.pose) lignes.push('La liste du formulaire a été mise à jour.');
   else lignes.push('Le formulaire était déjà à jour : rien n’a été modifié.');
 

@@ -25,7 +25,19 @@
  * retenues et celles en dépassement — c'est dit dans l'onglet d'aide.
  */
 
-const LIMITEUR_VERSION_ = '0.8.2';
+const LIMITEUR_VERSION_ = '0.10.0';
+
+/**
+ * Combien de temps une soumission attend le verrou avant d'abandonner.
+ *
+ * Un traitement dure quelques secondes : vingt-cinq suffisent à absorber deux
+ * ou trois soumissions arrivées ensemble. Au-delà, on abandonne — mais on le
+ * DIT, parce qu'une réponse abandonnée ne reçoit jamais de verdict.
+ *
+ * Bien sous le plafond de six minutes par exécution, qui vaut pour tous les
+ * types de compte.
+ */
+const LIMITEUR_ATTENTE_VERROU_MS_ = 25 * 1000;
 
 const LIMITEUR_ONGLET_CRENEAUX_ = 'Créneaux';
 const LIMITEUR_ONGLET_JOURNAL_ = 'Journal';
@@ -48,6 +60,10 @@ const LIMITEUR_COLONNES_JOURNAL_ = ['Horodatage', 'Ligne', 'Créneau', 'Rang', '
 const LIMITEUR_ETATS_ = {
   ouvert: 'Ouvert',
   complet: 'Complet',
+  // Distingué de « Complet », et il le faut : un créneau fermé par la marge
+  // affiche encore des places restantes. « Restant 1 » à côté de « Complet » se
+  // lit comme une contradiction, et envoie chercher un défaut de calcul.
+  completParMarge: 'Complet par la marge',
   ferme: 'Fermé à la main',
   sansCapacite: 'Sans capacité',
 };
@@ -58,6 +74,7 @@ const LIMITEUR_VERDICTS_ = {
   horsReferentiel: 'Hors référentiel',
   sansCapacite: 'Sans capacité',
   echec: 'Échec',
+  nonTraitee: 'Non traitée',
 };
 
 const LIMITEUR_REGLAGES_PAR_DEFAUT_ = {
@@ -294,7 +311,8 @@ const limiteurEtatDesCreneaux_ = (creneaux, comptes) => creneaux
     let etat;
     if (creneau.etatLu === LIMITEUR_ETATS_.ferme) etat = LIMITEUR_ETATS_.ferme;
     else if (creneau.places === null) etat = LIMITEUR_ETATS_.sansCapacite;
-    else if (pris + creneau.marge >= creneau.places) etat = LIMITEUR_ETATS_.complet;
+    else if (pris >= creneau.places) etat = LIMITEUR_ETATS_.complet;
+    else if (pris + creneau.marge >= creneau.places) etat = LIMITEUR_ETATS_.completParMarge;
     else etat = LIMITEUR_ETATS_.ouvert;
 
     return {

@@ -558,6 +558,22 @@ section('A. Intégrité du projet');
       + 'croire une fois que Google avait répondu quand il avait refusé');
   }
 
+  // Une soumission doit ATTENDRE le verrou, jamais rendre la main aussitôt :
+  // sans cela elle ne reçoit aucun verdict, et personne ne sait qu'une personne
+  // dépassait la capacité. Le faux verrou du banc ne peut pas éprouver cette
+  // règle — nul autre ne tourne pour le libérer, donc toute attente échoue de
+  // la même façon. Elle se tient donc sur le source, faute de mieux.
+  {
+    const sync = fs.readFileSync(path.join(DOSSIER, 'Synchronisation.gs'), 'utf8');
+    verifier(/tryLock\(LIMITEUR_ATTENTE_VERROU_MS_\)/.test(sync),
+      'le déclencheur attend le verrou pendant un délai nommé, et non tryLock(0)');
+    const attente = /const LIMITEUR_ATTENTE_VERROU_MS_ = (\d+) \* 1000;/
+      .exec(fs.readFileSync(path.join(DOSSIER, 'Limiteur.gs'), 'utf8'));
+    verifier(attente && Number(attente[1]) >= 10 && Number(attente[1]) <= 300,
+      `le délai d’attente vaut ${attente ? attente[1] : '?'} s — entre dix secondes `
+      + 'et cinq minutes, bien sous le plafond de six minutes par exécution');
+  }
+
   // `outils/Controle.gs` ne tourne que dans Google : aucun test ne le charge,
   // et sa syntaxe seule est vérifiée par le préparateur. Mais il appelle des
   // fonctions internes du produit, et en renommer une le casserait sans que
@@ -740,11 +756,24 @@ section('E. La marge ferme avant la dernière place, sans la perdre');
     capacites: [['Mardi 14 h', 5, 1], ['Jeudi 9 h', 5]],
   });
   const mardi = lignesDe(c, 'Créneaux')[0];
-  egal([mardi.Pris, mardi.Restant, mardi['État']], [4, 1, 'Complet'],
+  egal([mardi.Pris, mardi.Restant, mardi['État']], [4, 1, 'Complet par la marge'],
     'quatre pris sur cinq avec une marge de 1 : le créneau est retiré alors qu’il '
-    + 'reste une place — c’est le but');
+    + 'reste une place — c’est le but, et l’état le DIT. « Restant 1 » à côté de '
+    + '« Complet » se lirait comme une contradiction, et enverrait chercher un '
+    + 'défaut de calcul qui n’existe pas');
   verifier(!c.elements[0].choix.some((x) => x.valeur === 'Mardi 14 h'),
     'et il ne figure plus dans le formulaire');
+
+  const pleine = prepare_({
+    reponses: [
+      ['2026-09-18 09:10', 'a@exemple.org', 'Mardi 14 h'],
+      ['2026-09-18 09:11', 'b@exemple.org', 'Mardi 14 h'],
+    ],
+    capacites: [['Mardi 14 h', 2, 1], ['Jeudi 9 h', 5]],
+  });
+  egal(lignesDe(pleine, 'Créneaux')[0]['État'], 'Complet',
+    'un créneau dont toutes les places sont prises dit « Complet », marge ou non : '
+    + 'sans quoi la distinction n’apprendrait rien');
 
   // Refuser la place que la marge réserve la perdrait pour tout le monde.
   c.feuilles[c.nomReponses].getRange(6, 1, 1, 3)
@@ -1196,14 +1225,26 @@ section('M. Le déclencheur ne meurt pas, et ne meurt pas en silence');
     'et l’alerte part quand même — c’est elle qui reste quand le Journal ne '
     + 'peut plus rien garder');
 
-  // Un verrou occupé n'est pas un échec : l'exécution qui le détient recomptera
-  // tout, cette ligne comprise.
+  // Une soumission qui n'obtient pas le verrou ne reçoit JAMAIS de verdict : ni
+  // ligne au Journal, ni courriel. Le comptage se rattrapera tout seul — il lit
+  // la feuille — mais une personne en dépassement croirait avoir une place.
+  // Payé en conditions réelles le 18 septembre 2026, sur la ligne 10.
   const h = prepare_({ capacites: [['Mardi 14 h', 2]] });
+  h.lire("SocleFeuilles.ecrireReglage('Réglages', 'Destinataire des alertes', 'chef@exemple.org')");
   h.lire('LockService.getDocumentLock().tryLock(0)');
   const occupe = h.lire('limiteurSousFilet_(2)');
-  egal([occupe.fait, !!occupe.echec, !!occupe.occupe], [false, false, true],
-    'verrou occupé : ni traité, ni en échec — rien à signaler à personne');
-  egal(lignesDe(h, 'Journal').length, 0, 'et rien n’est écrit au Journal');
+  egal([occupe.fait, !!occupe.abandon], [false, true],
+    'un verrou qui ne se libère pas fait abandonner la soumission');
+
+  const abandonnee = lignesDe(h, 'Journal').pop();
+  egal(abandonnee.Verdict, 'Non traitée',
+    'et l’abandon est consigné plutôt que passé sous silence : le comptage se '
+    + 'rattrape au recomptage suivant, le verdict est perdu pour de bon');
+  egal(abandonnee.Ligne, 2, 'avec la ligne concernée, pour la retrouver');
+  verifier(/prévenez-la vous-même/.test(String(abandonnee['Ce qui a échoué'])),
+    'et ce qu’il reste à faire à la main');
+  verifier(h.appels.courriels.some((m) => m.to === 'chef@exemple.org'),
+    'l’exploitant est prévenu : c’est lui qui devra rattraper');
 }
 
 section('N. Le diagnostic dit ce qu’il sait, et avoue ce qu’il ignore');
@@ -1498,12 +1539,16 @@ section('P. Les couleurs disent la même chose partout, et les colonnes s’expl
     capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 3]],
   });
 
-  egal(reglesDe(c, 'Créneaux').length, 4,
-    'quatre règles sur l’onglet « Créneaux » : une par état possible');
+  egal(reglesDe(c, 'Créneaux').length, 5,
+    'cinq règles sur l’onglet « Créneaux » : une par état possible');
   verifier(!!teinteDe(c, 'Créneaux', 'Ouvert'), '« Ouvert » est coloré');
 
   // « Complet » n'est pas un problème, c'est le fonctionnement normal. Le
   // peindre en orange le ferait traiter comme une anomalie.
+  egal(teinteDe(c, 'Créneaux', 'Complet par la marge'), teinteDe(c, 'Créneaux', 'Complet'),
+    'un créneau fermé par la marge porte la teinte de ce qui est complet : le mot '
+    + 'les distingue, la couleur dit qu’il n’y a rien à faire ni dans un cas ni '
+    + 'dans l’autre');
   egal(teinteDe(c, 'Créneaux', 'Complet'), teinteDe(c, 'Créneaux', 'Fermé à la main'),
     '« Complet » porte la teinte de ce qui est fini, comme « Fermé à la main » : '
     + 'il n’y a plus rien à y faire, ce n’est pas une anomalie');

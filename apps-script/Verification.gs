@@ -196,6 +196,7 @@ const limiteurVerifierLInstallation_ = () => {
       !duFormulaire.has(un.cle)
       && un.places !== null
       && un.etatLu !== LIMITEUR_ETATS_.complet
+      && un.etatLu !== LIMITEUR_ETATS_.completParMarge
       && un.etatLu !== LIMITEUR_ETATS_.ferme));
 
     const soucis = aAdopter.length + jamaisProposes.length;
