@@ -25,7 +25,7 @@ const FICHIERS = ['SocleDates.gs', 'SocleTexte.gs', 'SocleFeuilles.gs', 'SocleEr
 // 'K' en dernier : sa vérification du total se compte elle-même, et ne peut
 // donc pas être suivie d'autres assertions.
 const SECTIONS_ATTENDUES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-  'L', 'M', 'N', 'O', 'P', 'K'];
+  'L', 'M', 'N', 'O', 'P', 'Q', 'K'];
 
 let passes = 0;
 const echecs = [];
@@ -126,6 +126,9 @@ const monter = (options = {}) => {
           for (let i = 0; i < h; i += 1) f.validations[`${l + i}:${c}`] = regle;
           return this;
         },
+        // Le vrai rend `null` là où aucune règle n'a été posée : un faux qui
+        // rendrait toujours un objet validerait un code qui ne s'en méfie pas.
+        getDataValidation: () => f.validations[`${l}:${c}`] || null,
         clearContent() {
           for (let i = 0; i < h; i += 1) f.cellules[l + i - 1] = [];
           return this;
@@ -349,7 +352,11 @@ const monter = (options = {}) => {
           requireNumberBetween(a, b) { regle.min = a; regle.max = b; return bati; },
           setAllowInvalid(x) { regle.bloquant = x === false; return bati; },
           setHelpText(t) { regle.aide = t; return bati; },
-          build: () => regle,
+          build: () => ({
+            ...regle,
+            // Le vrai rend [valeurs, afficherLaListe] pour une liste de valeurs.
+            getCriteriaValues: () => [regle.valeurs, true],
+          }),
         };
         return bati;
       },
@@ -668,6 +675,34 @@ section('B. Le référentiel fait foi, le formulaire n’en est que le reflet');
     + 'devine pas un nombre de places que personne n’a décidé');
   egal(c.elements[0].choix.map((x) => x.valeur), ['Mardi 14 h', 'Jeudi 9 h'],
     'et il ne retire rien tant que rien n’est décidé');
+
+  // Un classeur installé par une version antérieure : sa liste déroulante ignore
+  // les états que la version courante sait écrire. Sans rattrapage, le tableau
+  // affiche « Non valide » sur des valeurs que le code vient d'y mettre — et
+  // rien ne dit qu'il suffirait de réinstaller.
+  {
+    const vieux = prepare_({ capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 5]] });
+    vieux.lire(`(() => {
+      const f = SpreadsheetApp.getActive().getSheetByName(LIMITEUR_ONGLET_CRENEAUX_);
+      const regle = SpreadsheetApp.newDataValidation()
+        .requireValueInList(['Ouvert', 'Complet'], true).build();
+      f.getRange(2, 6, 10, 1).setDataValidation(regle);
+    })()`);
+
+    const bilan = vieux.lire('limiteurSynchroniser_()');
+    egal(bilan.validation.repose, true,
+      'une synchronisation repose la liste des états quand elle a vieilli');
+
+    const posee = vieux.feuilles['Créneaux'].validations['2:6'].valeurs;
+    verifier(posee.indexOf('Complet par la marge') >= 0,
+      'et la liste accepte désormais tous les états que le code sait écrire — un '
+      + 'code qui écrit ce que le classeur déclare invalide se contredit, et mine '
+      + 'la confiance qu’on met dans le reste');
+
+    // En régime permanent, on ne réécrit pas : la lecture suffit à le savoir.
+    egal(vieux.lire('limiteurSynchroniser_()').validation.repose, false,
+      'la synchronisation suivante ne la repose pas : elle est déjà juste');
+  }
 
   capacite_(c, 'Mardi 14 h', 2);
   capacite_(c, 'Jeudi 9 h', 3);
@@ -1621,6 +1656,71 @@ section('P. Les couleurs disent la même chose partout, et les colonnes s’expl
   verifier(!leveSurHabillage,
     'un onglet protégé ne fait pas échouer l’habillage : l’apparence ne doit pas '
     + 'empêcher un outil de fonctionner');
+}
+
+section('Q. Se greffer sur un classeur qui vit déjà');
+{
+  // Trois onglets sont réécrits en entier parce qu'ils appartiennent au code.
+  // Sur un classeur métier qui en porterait un du même nom, ce serait une perte
+  // de travail, et elle serait silencieuse.
+  const occupe = monter();
+  poserReponses_(occupe, ['Horodatage', 'Adresse e-mail', 'Créneau souhaité'], []);
+  occupe.lire(`(() => {
+    const f = SpreadsheetApp.getActive().insertSheet('Aide');
+    f.getRange(1, 1, 2, 2).setValues([
+      ['Procédure', 'Responsable'],
+      ['Ouverture des locaux', 'Accueil'],
+    ]);
+  })()`);
+
+  leve(() => occupe.lire('limiteurInstaller_()'), /existe déjà dans ce classeur/,
+    'un onglet « Aide » qui ne vient pas du limiteur fait refuser l’installation');
+  verifier(/Renommez l’onglet existant/.test(
+    (() => { try { occupe.lire('limiteurInstaller_()'); return ''; } catch (e) { return e.message; } })()),
+    'et le message dit quoi faire, sans décider à la place de personne');
+
+  egal(occupe.feuilles.Aide.getRange(2, 1).getValue(), 'Ouverture des locaux',
+    'le contenu de l’onglet est intact : on refuse AVANT d’écrire quoi que ce soit');
+  egal(occupe.classeur.getSheetByName('Créneaux'), null,
+    'et rien n’a été installé — un classeur à moitié installé est pire qu’un '
+    + 'classeur pas installé, parce qu’on ne sait plus où l’on en est');
+
+  // Le même onglet, mais vide : il n'appartient à personne.
+  const vide = monter();
+  poserReponses_(vide, ['Horodatage', 'Adresse e-mail', 'Créneau souhaité'], []);
+  vide.lire("SpreadsheetApp.getActive().insertSheet('Aide')");
+  vide.lire('limiteurInstaller_()');
+  verifier(!!vide.classeur.getSheetByName('Créneaux'),
+    'un onglet homonyme mais vide ne bloque rien : il n’appartient à personne');
+
+  // Un formulaire qui vit déjà porte des réponses antérieures à l'installation.
+  const ancien = prepare_({
+    reponses: [
+      ['2026-09-10 08:00', 'ancien1@exemple.org', 'Mardi 14 h'],
+      ['2026-09-10 08:05', 'ancien2@exemple.org', 'Mardi 14 h'],
+      ['2026-09-10 08:10', 'ancien3@exemple.org', 'Mardi 14 h'],
+    ],
+    capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 5]],
+  });
+  egal(lignesDe(ancien, 'Créneaux')[0].Pris, 3,
+    'les réponses reçues avant l’installation sont comptées : le comptage lit la '
+    + 'feuille, pas le Journal');
+  verifier(!ancien.elements[0].choix.some((x) => x.valeur === 'Mardi 14 h'),
+    'un créneau déjà dépassé disparaît donc dès l’installation, sans prévenir '
+    + 'personne — c’est à savoir avant de se greffer sur une campagne en cours');
+
+  egal(lignesDe(ancien, 'Journal').length, 0,
+    'mais elles n’ont AUCUN verdict : le déclencheur n’existait pas quand elles '
+    + 'sont arrivées, et rien ne peut le rattraper après coup');
+
+  // C'est l'onglet « Listes » qui rattrape, et lui seul.
+  ancien.lire('limiteurEcrireLesListes_(limiteurEtablirLesListes_())');
+  const listes = lignesDe(ancien, 'Listes');
+  egal(listes.filter((une) => une.Statut === 'Liste d’attente').length, 1,
+    'les listes, elles, rangent la troisième en liste d’attente : c’est le seul '
+    + 'moyen de savoir qui dépasse parmi les inscrits d’avant');
+  egal(listes.find((une) => une.Statut === 'Liste d’attente')['Adresse e-mail'],
+    'ancien3@exemple.org', 'et de savoir qui prévenir à la main');
 }
 
 section('K. La documentation dit ce que le banc fait vraiment');

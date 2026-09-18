@@ -184,6 +184,7 @@ const limiteurEtablirLesListes_ = () => {
 
 /** Écrit les listes dans leur onglet, qui appartient au code et se réécrit. */
 const limiteurEcrireLesListes_ = (bilan) => {
+  limiteurExigerOngletANous_(LIMITEUR_ONGLET_LISTES_, LIMITEUR_LISTES_AVANT_);
   SocleFeuilles.ecrireTable(LIMITEUR_ONGLET_LISTES_, bilan.entete, bilan.lignes);
   const { feuille } = SocleFeuilles.onglet(LIMITEUR_ONGLET_LISTES_);
   feuille.setColumnWidth(1, 180);

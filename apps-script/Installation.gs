@@ -47,6 +47,42 @@ const LIMITEUR_AIDE_ = [
     + 'rang obtenu, le verdict, et si un courriel est parti.'],
 ];
 
+/** La liste des états, telle que la validation de l'onglet doit l'accepter. */
+const limiteurEtatsAttendus_ = () => Object.keys(LIMITEUR_ETATS_)
+  .map((clef) => LIMITEUR_ETATS_[clef]);
+
+/**
+ * Remet la liste déroulante de la colonne « État » en accord avec les états que
+ * le code sait écrire.
+ *
+ * **Appelée à chaque synchronisation, et pas seulement à l'installation.** Une
+ * version qui ajoute un état laisserait sinon tous les classeurs déjà installés
+ * afficher « Non valide » sur des valeurs que le code vient lui-même d'écrire —
+ * un tableau qui se contredit, et rien pour dire qu'il suffit de réinstaller.
+ * Payé le 18 septembre 2026 en ajoutant « Complet par la marge ».
+ *
+ * On relit la validation avant de la reposer : en régime permanent elle est
+ * juste, et l'écriture n'a donc lieu qu'une fois après une mise à jour.
+ */
+const limiteurAjusterLaValidationDesEtats_ = (table) => {
+  const attendus = limiteurEtatsAttendus_();
+  if (!('État' in table.index)) return { repose: false, raison: 'colonne absente' };
+  const position = table.index['État'] + 1;
+
+  const actuelle = SocleErreurs.absorber('lecture de la validation des états',
+    () => {
+      const regle = table.feuille.getRange(2, position).getDataValidation();
+      return regle ? regle.getCriteriaValues()[0] : null;
+    }, null);
+
+  const aJour = Array.isArray(actuelle)
+    && attendus.every((un) => actuelle.indexOf(un) >= 0);
+  if (aJour) return { repose: false, raison: 'déjà à jour' };
+
+  SocleFeuilles.listeSurColonne(LIMITEUR_ONGLET_CRENEAUX_, 'État', attendus);
+  return { repose: true, etats: attendus.length };
+};
+
 /** Les colonnes que le code calcule, et auxquelles l'utilisateur ne touche pas. */
 const limiteurPoserLOngletDesCreneaux_ = () => {
   const { cree } = SocleFeuilles.onglet(LIMITEUR_ONGLET_CRENEAUX_);
@@ -58,8 +94,7 @@ const limiteurPoserLOngletDesCreneaux_ = () => {
     // besoin.
     SocleFeuilles.completerColonnes(LIMITEUR_ONGLET_CRENEAUX_, LIMITEUR_COLONNES_CRENEAUX_);
   }
-  SocleFeuilles.listeSurColonne(LIMITEUR_ONGLET_CRENEAUX_, 'État',
-    Object.keys(LIMITEUR_ETATS_).map((clef) => LIMITEUR_ETATS_[clef]));
+  SocleFeuilles.listeSurColonne(LIMITEUR_ONGLET_CRENEAUX_, 'État', limiteurEtatsAttendus_());
   return { cree };
 };
 
@@ -89,6 +124,7 @@ const limiteurPoserLesReglages_ = () => {
 };
 
 const limiteurPoserLAide_ = () => {
+  limiteurExigerOngletANous_(LIMITEUR_ONGLET_AIDE_, ['Question', 'Réponse']);
   const { cree } = SocleFeuilles.onglet(LIMITEUR_ONGLET_AIDE_);
   // Réécrit à chaque installation, contrairement aux autres onglets : l'aide
   // appartient au code, pas à l'utilisateur, et une aide périmée est pire que
@@ -123,6 +159,13 @@ const limiteurPoserLeDeclencheur_ = () => {
 
 /** Installe ou met à jour, puis synchronise une première fois. */
 const limiteurInstaller_ = () => {
+  // Tous les refus d'abord : un classeur à moitié installé est pire qu'un
+  // classeur pas installé, parce qu'on ne sait plus où l'on en est.
+  limiteurExigerOngletANous_(LIMITEUR_ONGLET_AIDE_, ['Question', 'Réponse']);
+  limiteurExigerOngletANous_(LIMITEUR_ONGLET_VERIFICATION_,
+    LIMITEUR_COLONNES_VERIFICATION_);
+  limiteurExigerOngletANous_(LIMITEUR_ONGLET_LISTES_, LIMITEUR_LISTES_AVANT_);
+
   const creneaux = limiteurPoserLOngletDesCreneaux_();
   const journal = limiteurPoserLOngletDuJournal_();
   const reglages = limiteurPoserLesReglages_();

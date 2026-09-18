@@ -25,7 +25,7 @@
  * retenues et celles en dépassement — c'est dit dans l'onglet d'aide.
  */
 
-const LIMITEUR_VERSION_ = '0.10.0';
+const LIMITEUR_VERSION_ = '1.1.0';
 
 /**
  * Combien de temps une soumission attend le verrou avant d'abandonner.
@@ -389,6 +389,38 @@ const limiteurAdopterLesNouveaux_ = (creneaux, libellesDuFormulaire) => {
 // ---------------------------------------------------------------------------
 // Le journal
 // ---------------------------------------------------------------------------
+
+/**
+ * Refuse d'écraser un onglet qui appartient à quelqu'un d'autre.
+ *
+ * Trois onglets sont **réécrits en entier** à chaque fois — « Aide »,
+ * « Vérification » et « Listes » —, parce qu'ils appartiennent au code et non à
+ * l'utilisateur. Sur un classeur neuf c'est sans conséquence ; sur un classeur
+ * métier qui porterait déjà un onglet de ce nom, c'est une perte de travail, et
+ * elle serait silencieuse.
+ *
+ * Le critère est l'en-tête : un onglet vide, absent, ou dont la première ligne
+ * est celle qu'on écrit soi-même est le nôtre. Tout le reste appartient à
+ * quelqu'un, et se renomme — ce n'est pas au code d'en décider.
+ */
+const limiteurExigerOngletANous_ = (nom, entete) => {
+  const feuille = limiteurClasseur_().getSheetByName(nom);
+  if (!feuille || feuille.getLastRow() === 0) return { notre: true, vide: true };
+
+  const largeur = Math.max(feuille.getLastColumn(), 1);
+  const presente = feuille.getRange(1, 1, 1, largeur).getValues()[0]
+    .map((une) => SocleTexte.normaliserEspaces(une));
+  const notre = entete.every((attendu, rang) => presente[rang] === attendu);
+  if (notre) return { notre: true, vide: false };
+
+  throw SocleErreurs.erreur({
+    quoi: `L'onglet « ${nom} » existe déjà dans ce classeur, et il ne vient pas du `
+      + `limiteur : sa première ligne porte « ${presente.filter((une) => une !== '').join(', ')} ».`,
+    quoiFaire: `Le limiteur réécrit entièrement l'onglet « ${nom} » à chaque fois, `
+      + 'et effacerait donc ce qu’il contient. Renommez l’onglet existant, puis '
+      + 'relancez — rien n’a été modifié.',
+  });
+};
 
 /** Ajoute une ligne au journal, sans jamais en réécrire une ancienne. */
 const limiteurJournaliser_ = (entree) => {

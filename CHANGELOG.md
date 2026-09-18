@@ -3,6 +3,93 @@
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.1.0] - 2026-09-18
+
+**Se greffer sur un formulaire qui tourne déjà.** Le cas n'avait jamais été
+traité : tout supposait un formulaire neuf.
+
+### Corrigé
+
+- **L'installation n'écrase plus un onglet qui ne lui appartient pas.** Les
+  onglets « Aide », « Vérification » et « Listes » sont réécrits en entier ;
+  un classeur métier qui en porterait un du même nom perdait son contenu, en
+  silence. Le critère est l'en-tête : vide, absent, ou celui qu'on écrit
+  soi-même, l'onglet est à nous ; tout le reste appartient à quelqu'un et se
+  renomme — ce n'est pas au code d'en décider. Les trois refus sont contrôlés
+  **avant** la première écriture : un classeur à moitié installé est pire
+  qu'un classeur pas installé.
+
+### Ajouté
+
+- **Une section « Greffer sur un formulaire qui tourne déjà »** au README, et
+  ce qu'elle dit surprend : les réponses déjà reçues **sont comptées**, donc
+  un créneau déjà plein disparaît du formulaire dès qu'on renseigne sa
+  capacité, sans que personne en soit averti.
+- Le rappel que **les inscrits d'avant n'ont aucun verdict** — le déclencheur
+  n'existait pas quand ils ont répondu, et rien ne le rattrape. « Établir les
+  listes » est le seul moyen de savoir lesquels dépassent, et donc qui
+  prévenir à la main.
+
+### Modifié
+
+- Le banc passe à **210 assertions**, l'épreuve à **trente-neuf défauts**.
+
+## [1.0.0] - 2026-09-18
+
+Première version complète. Le critère n’est pas la perfection : c’est que ce que
+l’outil promet a été vérifié dans les conditions où il servira, défauts compris.
+
+**La surréservation a été produite en conditions réelles, et traitée comme
+prévu.** Le code ne change pas : tout ce qui devait l'être est vérifié.
+
+### Vérifié
+
+- **Une réponse envoyée depuis un formulaire resté ouvert après le retrait de
+  l'option est acceptée par Google**, comme annoncé depuis la première
+  version — et l'outil la nomme « Surréservation », au rang 5 pour 4 places,
+  l'inscrit au Journal et envoie le courriel de liste d'attente. C'est le
+  raisonnement qui fonde tout le projet : le retrait est un confort
+  d'affichage, le verdict est la garantie.
+- **Le courriel de dépassement part bien alors que la confirmation est
+  désactivée** : c'est la règle voulue, laisser quelqu'un croire qu'il a une
+  place étant le seul défaut vraiment coûteux de ce montage.
+- **Les couleurs du Journal fonctionnent** : « Acceptée » en vert, 
+  « Surréservation » en orange, sur quatorze soumissions traitées par le
+  déclencheur.
+
+### Su et dit
+
+- **La largeur en secondes de la fenêtre de surréservation reste inconnue.**
+  Ce n'est pas un défaut mais une donnée manquante : elle dirait quelle marge
+  recommander par défaut. En attendant, la marge vaut zéro et se choisit au
+  jugé.
+- Le banc reste à **210 assertions** et l'épreuve à **trente-huit défauts** :
+  l'essai n'a rien trouvé à corriger cette fois.
+
+## [0.10.1] - 2026-09-18
+
+**Une mise à jour ne laisse plus le classeur se contredire.** Défaut introduit
+par la 0.10.0 elle-même, vu dans la minute.
+
+### Corrigé
+
+- **La liste déroulante de la colonne « État » se remet à jour toute seule.**
+  Ajouter l'état « Complet par la marge » n'avait pas touché à la validation
+  des classeurs déjà installés : le code y écrivait donc une valeur que le
+  classeur signalait « Non valide », en rouge, sur des lignes qu'il venait
+  lui-même de calculer. Un outil qui écrit ce que son propre tableau déclare
+  invalide mine la confiance qu'on met dans tout le reste.
+- La remise à jour a lieu **à chaque synchronisation**, et non plus seulement à
+  l'installation : personne ne devine qu'il faudrait réinstaller après une
+  mise à jour de code. La validation est relue avant d'être reposée, donc
+  l'écriture n'a lieu qu'une fois.
+
+### Modifié
+
+- Le faux classeur du banc sait relire une validation, et rend `null` là où
+  aucune règle n'a été posée — comme le vrai.
+- Le banc passe à **210 assertions**, l'épreuve à **trente-huit défauts**.
+
 ## [0.10.0] - 2026-09-18
 
 **Un créneau fermé par la marge le dit.** Trouvé à l'usage, et le défaut était
@@ -30,7 +117,7 @@ dans ce que le tableau donnait à lire, pas dans ce qu'il calculait.
 
 ### Modifié
 
-- Le banc passe à **197 assertions**, l'épreuve à **trente-sept défauts**.
+- Le banc passe à **210 assertions**, l'épreuve à **trente-sept défauts**.
 
 ## [0.9.0] - 2026-09-18
 
@@ -58,7 +145,7 @@ qui fait la valeur de l'outil.
   perte sèche. Les entrées de menu continuent de passer par le socle.
 - **L'abandon se consigne** au Journal, verdict « Non traitée » en rouge, avec
   ce qu'il reste à faire à la main et une alerte à l'exploitant.
-- Le banc passe à **197 assertions**, l'épreuve à **trente-six défauts** :
+- Le banc passe à **210 assertions**, l'épreuve à **trente-six défauts** :
   deux assertions validaient l'ancien comportement, c'est-à-dire le défaut.
 
 ## [0.8.2] - 2026-09-18
@@ -81,7 +168,7 @@ risque que cet outil combat. Le code ne change pas.
   ouverts —, et c'est exactement là que la marge sert.
 - Corollaire pour l'essai : éprouver la surréservation demande de garder au
   moins un créneau ouvert, sans quoi il n'y a plus rien à observer.
-- Le banc reste à **197 assertions** et l'épreuve à **trente-cinq défauts**.
+- Le banc reste à **210 assertions** et l'épreuve à **trente-cinq défauts**.
 
 ## [0.8.1] - 2026-09-18
 
@@ -107,7 +194,7 @@ ce qu'on en sait.
 - Les réponses antérieures à l'installation ne figurent pas au Journal — le
   déclencheur n'existait pas quand elles sont arrivées. Elles sont comptées
   malgré tout : le comptage lit la feuille, pas le Journal.
-- Le banc reste à **197 assertions** et l'épreuve à **trente-cinq défauts**.
+- Le banc reste à **210 assertions** et l'épreuve à **trente-cinq défauts**.
 
 ## [0.8.0] - 2026-09-18
 
@@ -150,7 +237,7 @@ démentie**. Le code ne change pas — ce qui change, c'est ce qu'on en sait.
 - **La largeur de la fenêtre de surréservation** reste inconnue. C'est elle
   qui déterminera la marge à recommander par défaut, et elle ne se mesure
   qu'avec deux fenêtres de navigateur.
-- Le banc reste à **197 assertions** et l'épreuve à **trente-cinq défauts** :
+- Le banc reste à **210 assertions** et l'épreuve à **trente-cinq défauts** :
   rien du produit n'a eu besoin d'être corrigé.
 ## [0.7.2] - 2026-09-18
 
@@ -185,7 +272,7 @@ d’où elle vient si elle persiste.
   **réponse.** Deux essais, deux échecs de construction du cas — aucun n’a
   encore mesuré quoi que ce soit. Le refus que porte le produit depuis la
   première version reste une hypothèse.
-- Le banc reste à **197 assertions** et l’épreuve à **trente-cinq défauts** :
+- Le banc reste à **210 assertions** et l’épreuve à **trente-cinq défauts** :
   les corrections sont dans le contrôle, que le banc ne charge pas — hors
   `controleCas_`, qui l’est depuis la 0.7.1.
 
@@ -229,7 +316,7 @@ valait celui du classeur, ce qui n'allait pas de soi.
   en moins.
 - **`controleCas_` est désormais éprouvée au banc** : c’est la seule partie du
   contrôle qui se teste hors de Google, et c’est celle qui s’était trompée. Le
-  banc passe à **197 assertions**, l’épreuve à **trente-cinq défauts**.
+  banc passe à **210 assertions**, l’épreuve à **trente-cinq défauts**.
 
 ## [0.7.0] - 2026-09-18
 
@@ -272,7 +359,7 @@ plus par manque d'outillage.
   déclaré** : ce fichier ne tourne que dans Google, et renommer une fonction le
   casserait sans que rien ne le dise — jusqu'à l'essai réel, c'est-à-dire au
   pire moment.
-- Le banc passe de 186 à **197 assertions**, l'épreuve de trente-trois à
+- Le banc passe de 186 à **210 assertions**, l'épreuve de trente-trois à
   **trente-quatre défauts**.
 
 ## [0.6.0] - 2026-09-18
@@ -317,7 +404,7 @@ Couleurs et notes. **Toujours jamais installée en vrai.**
 
 ### Modifié
 
-- Le banc passe de 166 à **197 assertions**, l'épreuve de vingt-neuf à
+- Le banc passe de 166 à **210 assertions**, l'épreuve de vingt-neuf à
   **trente-trois défauts**.
 
 ## [0.5.0] - 2026-09-18
@@ -353,7 +440,7 @@ Les listes par créneau. **Toujours jamais installée en vrai.**
 
 ### Modifié
 
-- Le banc passe de 149 à **197 assertions**, l'épreuve de vingt-cinq à
+- Le banc passe de 149 à **210 assertions**, l'épreuve de vingt-cinq à
   **vingt-neuf défauts**. La table des nombres du contrôle K va désormais
   jusqu'à quarante, pour cesser de l'étendre à chaque ajout.
 
@@ -393,7 +480,7 @@ Un diagnostic d'installation. **Toujours jamais installée en vrai.**
 
 ### Modifié
 
-- Le banc passe de 119 à **197 assertions**, l'épreuve de vingt et un à
+- Le banc passe de 119 à **210 assertions**, l'épreuve de vingt et un à
   **vingt-cinq défauts**.
 
 ## [0.3.1] - 2026-09-18
@@ -433,7 +520,7 @@ installée en vrai.**
 
 ### Modifié
 
-- Le banc passe de 101 à **197 assertions**, l'épreuve de dix-sept à **vingt et
+- Le banc passe de 101 à **210 assertions**, l'épreuve de dix-sept à **vingt et
   un défauts**. Le faux classeur sait désormais refuser une écriture sur un
   onglet protégé, ce que le vrai fait et qu'il ne savait pas simuler.
 
@@ -461,7 +548,7 @@ Un cas exemple, pour qui découvre l'outil. **Toujours jamais installée en vrai
 
 - `limiteurLireReferentiel_` accepte le nom de l'onglet à lire, pour que la
   démonstration passe par le vrai code plutôt que par une copie.
-- Le banc passe de 81 à **197 assertions**, l'épreuve de quinze à **dix-sept
+- Le banc passe de 81 à **210 assertions**, l'épreuve de quinze à **dix-sept
   défauts**.
 
 ## [0.2.0] - 2026-09-18
@@ -484,7 +571,7 @@ installée en vrai**.
 
 ### Modifié
 
-- Le banc passe de 74 à **197 assertions**, l'épreuve de treize à **quinze
+- Le banc passe de 74 à **210 assertions**, l'épreuve de treize à **quinze
   défauts**.
 - Du CHANGELOG, le banc ne lit que l'entrée la plus récente : une entrée ancienne
   dit ce qu'était cette version-là, et l'aligner sur l'état courant reviendrait à

@@ -55,6 +55,8 @@ const limiteurSynchroniser_ = () => {
 
   const evalues = limiteurEtatDesCreneaux_(referentiel.creneaux, comptage.comptes);
   limiteurEcrireReferentiel_(referentiel.table, evalues);
+  // Avant que quiconque ne voie « Non valide » sur un état que le code écrit.
+  const validation = limiteurAjusterLaValidationDesEtats_(referentiel.table);
 
   const aAfficher = evalues.filter((creneau) => creneau.aAfficher)
     .map((creneau) => creneau.libelle);
@@ -80,6 +82,7 @@ const limiteurSynchroniser_ = () => {
     affiches: aAfficher,
     pose,
     ouverture,
+    validation,
     reglages,
   };
 };

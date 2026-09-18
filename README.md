@@ -133,6 +133,48 @@ fermé par l'outil**. Un formulaire que quelqu'un a fermé l'a été pour une ra
 qui n'appartient pas au code, et une réouverture automatique la défairait. Le
 même principe vaut pour un créneau marqué « Fermé à la main ».
 
+## Greffer sur un formulaire qui tourne déjà
+
+L'installation décrite plus haut suppose un formulaire neuf. Sur un formulaire
+qui reçoit déjà des réponses, trois choses changent — et la première surprend.
+
+**Les réponses déjà reçues sont comptées**, parce que le comptage lit la feuille
+des réponses et non le Journal. Conséquence immédiate : dès que vous renseignez
+les places, un créneau déjà rempli **disparaît du formulaire**, sans que personne
+n'en soit averti. Si des inscriptions sont en cours, prévenez avant d'installer.
+
+**Les personnes déjà inscrites n'ont aucun verdict.** Le déclencheur n'existait
+pas quand elles ont répondu, et rien ne peut le rattraper après coup : elles
+n'apparaîtront jamais au Journal. C'est **« Établir les listes »** qui dit
+lesquelles dépassent la capacité — et c'est le seul moyen de savoir qui prévenir
+à la main.
+
+**Un onglet homonyme fait refuser l'installation.** Les onglets « Aide »,
+« Vérification » et « Listes » sont réécrits en entier, parce qu'ils
+appartiennent au code. Si votre classeur en porte déjà un de ce nom, l'installation
+s'arrête **sans rien modifier** et vous demande de le renommer : ce n'est pas au
+code de décider du sort de votre travail.
+
+### La marche à suivre
+
+1. Reliez le formulaire à un classeur, s'il ne l'est pas : dans le formulaire,
+   onglet *Réponses* > *Afficher dans Sheets*.
+2. *Extensions > Apps Script*, collez le contenu de `apps-script/`, lancez
+   `installerLeLimiteur`, acceptez les autorisations.
+3. Rechargez le classeur. L'onglet « Créneaux » porte déjà **vos** libellés : ils
+   ont été repris du formulaire, pas inventés.
+4. Renseignez « Places ». **C'est là que les créneaux déjà pleins disparaissent.**
+5. **Créneaux > Vérifier mon installation.** Il attrape tout ce qui, sur un
+   formulaire existant, ne se découvrirait qu'à la première soumission : une
+   seconde question à choix qui rendrait le pilotage ambigu, un saut de section,
+   une grille, un libellé modifié d'un seul côté, des adresses non collectées.
+6. **Créneaux > Établir les listes**, et regardez la colonne « Statut » : toute
+   personne en « Liste d'attente » s'est inscrite avant vous et ne le sait pas.
+   Prévenez-la.
+
+Rien de tout cela n'est nécessaire sur un formulaire neuf, où il n'y a ni
+réponse antérieure, ni onglet préexistant.
+
 ## Se lire d'un coup d'œil
 
 Les quatre onglets qui portent un état — « Créneaux », « Journal »,
@@ -354,7 +396,7 @@ tient pas à ma parole.
 node banc/test.js
 ```
 
-197 assertions, hors de Google. Les faux services refusent ce que les vrais
+210 assertions, hors de Google. Les faux services refusent ce que les vrais
 refusent : une question à choix sans aucune option, une conversion de type
 impossible, une feuille liée à aucun formulaire, un envoi sans destinataire.
 
@@ -364,7 +406,7 @@ Le banc s'éprouve lui-même :
 node banc/epreuve.js
 ```
 
-Il réintroduit **trente-sept défauts réels** dans une copie du projet — l'adoption des
+Il réintroduit **trente-neuf défauts réels** dans une copie du projet — l'adoption des
 options nouvelles supprimée, le refus de la navigation par section levé, la
 réouverture rendue aveugle, la marge appliquée au verdict, le quota d'envoi plus
 lu, un formulaire ouvert par identifiant — et vérifie que le banc échoue sur
@@ -455,10 +497,17 @@ ce qui fait du Journal le témoin exclusif du déclencheur : la synchronisation
 lancée depuis le menu n'y écrit jamais, donc un Journal vide alors que tout
 semble marcher signifie que rien ne se fait tout seul.
 
-**Un seul point reste ouvert : la largeur réelle de la fenêtre de
-surréservation**, qui déterminera la marge à recommander par défaut. Elle ne se
-mesure qu'en gardant un formulaire ouvert dans une fenêtre privée pendant qu'on
-remplit le créneau ailleurs — c'est l'étape 1 du protocole d'essai.
+**La surréservation a été produite et traitée comme prévu.** Un formulaire resté
+ouvert dans une autre fenêtre a envoyé sa réponse après le retrait de l'option ;
+Google l'a acceptée, personne n'aurait pu la refuser, et l'outil l'a nommée
+« Surréservation » au rang 5 pour 4 places, inscrite au Journal, avec le courriel
+de liste d'attente parti vers la personne. C'est le raisonnement qui fonde tout
+le projet, et il tient.
+
+**Ce qui n'est pas mesuré**, et n'est pas un défaut mais une donnée manquante :
+la **largeur en secondes** de cette fenêtre. Elle dira quelle marge recommander
+par défaut. À ce jour la marge se choisit au jugé — c'est pourquoi elle vaut
+zéro par défaut, et qu'elle ne se met qu'en connaissance de cause.
 
 Non traité, et assumé : les grilles, et les formulaires à plusieurs questions de
 créneaux. Les uns comme les autres demandent une autre façon de compter.
@@ -566,6 +615,24 @@ An empty "Places" (Capacity) cell means "undecided", never "zero": the slot rema
 A choice question cannot have zero options — Google Forms rejects it. When the last slot is booked up, the form is **closed**, with a customizable message explaining why.
 
 It automatically reopens as soon as a spot is freed, but **only if the form was closed by the tool**. A form manually closed by an administrator was closed for human reasons, and an automated reopening must never override that decision. The same rule applies to any slot marked "Fermé à la main" (Manually closed).
+
+## Grafting onto a form already in use
+
+The setup above assumes a fresh form. On one already collecting responses, three
+things differ. **Existing responses are counted** — counting reads the response
+sheet, not the Journal — so a slot already full **vanishes from the form** as
+soon as you fill in its capacity, with nobody warned. **People who signed up
+earlier have no verdict at all**: the trigger did not exist when they answered,
+and nothing can reconstruct it; *Établir les listes* is the only way to see which
+of them exceed capacity, and therefore whom to contact by hand. **A same-named
+sheet aborts the install**: `Aide`, `Vérification` and `Listes` are rewritten
+wholesale, so if your spreadsheet already has one, installation stops **without
+changing anything** and asks you to rename it.
+
+Order of operations: link the form to a spreadsheet, install and run
+`installerLeLimiteur`, reload, fill in `Places` (this is when full slots
+disappear), run *Vérifier mon installation*, then *Établir les listes* and warn
+anyone shown as `Liste d'attente`.
 
 ## Readable at a glance
 
@@ -734,7 +801,7 @@ Only one occurrence appears (`FormApp.openByUrl` in `Formulaire.gs`), using the 
 node banc/test.js
 ```
 
-197 assertions outside Google's environment. Mock services replicate Google's constraints: rejecting empty choice questions, invalid type conversions, sheets without linked forms, or emails without recipients.
+210 assertions outside Google's environment. Mock services replicate Google's constraints: rejecting empty choice questions, invalid type conversions, sheets without linked forms, or emails without recipients.
 
 The test suite tests itself:
 
@@ -742,7 +809,7 @@ The test suite tests itself:
 node banc/epreuve.js
 ```
 
-It introduces **thirty-seven deliberate defects** into a project copy (bypassing option adoption, removing section-navigation refusal, blinding the reopening logic, applying margins to verdicts, skipping quota checks, opening forms by ID) and verifies that the bench fails on each. A test suite that remains green against regressions proves nothing.
+It introduces **thirty-nine deliberate defects** into a project copy (bypassing option adoption, removing section-navigation refusal, blinding the reopening logic, applying margins to verdicts, skipping quota checks, opening forms by ID) and verifies that the bench fails on each. A test suite that remains green against regressions proves nothing.
 
 Syntax checking across all merged files (detecting global scope conflicts):
 
@@ -773,7 +840,8 @@ It also verifies what mock services can only assume: date strings returning as `
 
 - **Field-tested on 18 September 2026: ten hypotheses confirmed, none refuted.** Notably `setChoiceValues` does erase section navigation — so refusing to drive such a question is justified — a choice question does reject an empty option list, and `getFormUrl()` does return `null` on an unlinked sheet.
 - **The submission trigger does fire after the row is written** — verified with real submissions: the Journal filled itself with the right slot and rank, so `forSpreadsheet` was the right choice. This also makes the Journal the trigger's only witness: a menu-driven sync never writes to it.
-- **Still open:** the real width of the oversubscription window, which will set the default margin.
+- **Oversubscription was produced and handled as designed:** a form left open in another window submitted after the option had been pulled; Google accepted it, nobody could have refused it, and the tool named it `Surréservation` at rank 5 of 4 seats, logged it, and sent the waiting-list email. That is the reasoning the whole project rests on, and it holds.
+- **Not measured** — a missing figure rather than a defect: the width in seconds of that window, which would set the default margin. Until then the margin is a judgement call, which is why it defaults to zero.
 - Grids and multi-question forms are intentionally unsupported (they require different counting models).
 - Very large response sheets are read in full on every submission (fine for hundreds of rows; thousands would warrant paginated or delta counting).
 

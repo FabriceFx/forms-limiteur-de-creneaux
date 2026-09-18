@@ -147,11 +147,21 @@ const DEFAUTS = [
     'apps-script/Limiteur.gs',
     'else if (pris >= creneau.places) etat = LIMITEUR_ETATS_.complet;',
     ''],
+  ['la liste des états ne se remet plus à jour', 'apps-script/Synchronisation.gs',
+    'const validation = limiteurAjusterLaValidationDesEtats_(referentiel.table);',
+    'const validation = { repose: false };'],
+  ['l’installation écrase un onglet homonyme sans rien dire',
+    'apps-script/Installation.gs',
+    "  limiteurExigerOngletANous_(LIMITEUR_ONGLET_AIDE_, ['Question', 'Réponse']);\n"
+      + '  limiteurExigerOngletANous_(LIMITEUR_ONGLET_VERIFICATION_,\n'
+      + '    LIMITEUR_COLONNES_VERIFICATION_);\n'
+      + '  limiteurExigerOngletANous_(LIMITEUR_ONGLET_LISTES_, LIMITEUR_LISTES_AVANT_);',
+    ''],
   ['le nombre d’assertions annoncé n’est plus celui du banc', 'README.md',
-    '197 assertions, hors de Google', '74 assertions, hors de Google'],
+    '210 assertions, hors de Google', '74 assertions, hors de Google'],
   ['le README anglais annonce un autre nombre de défauts que le français',
     'README.md',
-    '**thirty-seven deliberate defects**', '**thirteen deliberate defects**'],
+    '**thirty-nine deliberate defects**', '**thirteen deliberate defects**'],
   ['les colonnes calculées ne sont plus vérifiées contiguës', 'apps-script/Limiteur.gs',
     '  if (fin - debut !== 3) {',
     '  if (false) {'],

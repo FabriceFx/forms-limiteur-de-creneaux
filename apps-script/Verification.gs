@@ -384,6 +384,7 @@ const limiteurVerifDesordre_ = (table) => {
 
 /** Écrit le rapport dans son onglet, qui n'appartient qu'au code. */
 const limiteurEcrireLaVerification_ = (controles) => {
+  limiteurExigerOngletANous_(LIMITEUR_ONGLET_VERIFICATION_, LIMITEUR_COLONNES_VERIFICATION_);
   const lignes = controles.map((un) => [un.nom, un.etat, un.constat, un.quoiFaire]);
   SocleFeuilles.ecrireTable(LIMITEUR_ONGLET_VERIFICATION_,
     LIMITEUR_COLONNES_VERIFICATION_, lignes);
