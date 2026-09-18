@@ -102,6 +102,36 @@ fermé par l'outil**. Un formulaire que quelqu'un a fermé l'a été pour une ra
 qui n'appartient pas au code, et une réouverture automatique la défairait. Le
 même principe vaut pour un créneau marqué « Fermé à la main ».
 
+## Un cas exemple, pour comprendre sans rien risquer
+
+Menu **Créneaux > Voir un exemple**. Trois onglets préfixés « Démo — » se posent
+dans le classeur, et l'onglet « Démo — déroulé » raconte un cas complet en six
+étapes : trois créneaux, sept places, des inscriptions, une de trop, deux
+annulations, puis la fermeture du formulaire.
+
+Chaque ligne dit ce qui arrive, ce que l'outil décide, ce que le formulaire
+proposerait à cet instant — et **pourquoi**.
+
+Trois choses ne se comprennent pas en les lisant, et l'exemple les montre :
+
+- l'étape 3, où une inscription est acceptée **au-delà** de la capacité, parce
+  que la personne avait la page ouverte avant le retrait de l'option ;
+- l'étape 4, où elle passe de la liste d'attente à une vraie place **sans que
+  personne n'agisse**, une annulation ayant décalé les rangs ;
+- l'étape 6, où le formulaire se ferme de lui-même faute de pouvoir rester sans
+  aucune option.
+
+**La démonstration ne raconte pas, elle calcule.** Elle appelle les mêmes
+fonctions de décision que celles qui pilotent votre formulaire, sur ses propres
+onglets. Une démonstration qui recopierait la logique serait juste le jour où on
+l'écrit et fausse à la modification suivante, sans que rien ne le signale — le
+banc vérifie donc que ce qu'elle affiche est bien ce que la vraie
+synchronisation rend sur les mêmes données.
+
+Elle ne touche ni au formulaire, ni à la feuille des réponses, ni aux onglets de
+production : elle peut se lancer sur une campagne en cours. **Créneaux > Retirer
+l'exemple** efface les trois onglets, et rien d'autre.
+
 ## Installation
 
 ### Prérequis
@@ -162,7 +192,7 @@ tient pas à ma parole.
 node banc/test.js
 ```
 
-74 assertions, hors de Google. Les faux services refusent ce que les vrais
+101 assertions, hors de Google. Les faux services refusent ce que les vrais
 refusent : une question à choix sans aucune option, une conversion de type
 impossible, une feuille liée à aucun formulaire, un envoi sans destinataire.
 
@@ -172,7 +202,7 @@ Le banc s'éprouve lui-même :
 node banc/epreuve.js
 ```
 
-Il réintroduit **treize défauts réels** dans une copie du projet — l'adoption des
+Il réintroduit **dix-sept défauts réels** dans une copie du projet — l'adoption des
 options nouvelles supprimée, le refus de la navigation par section levé, la
 réouverture rendue aveugle, la marge appliquée au verdict, le quota d'envoi plus
 lu, un formulaire ouvert par identifiant — et vérifie que le banc échoue sur
@@ -277,6 +307,29 @@ A choice question cannot have zero options — Google Forms rejects it. When the
 
 It automatically reopens as soon as a spot is freed, but **only if the form was closed by the tool**. A form manually closed by an administrator was closed for human reasons, and an automated reopening must never override that decision. The same rule applies to any slot marked "Fermé à la main" (Manually closed).
 
+## A worked example, safe to run
+
+**Créneaux > Voir un exemple** adds three sheets prefixed `Démo — ` and walks
+through a complete case in six steps: three slots, seven seats, sign-ups, one
+too many, two cancellations, then the form closing itself. Each row states what
+happens, what the tool decides, what the form would then offer — and why.
+
+Three things cannot be understood by reading about them, and the example shows
+them: a sign-up accepted **beyond** capacity because that person's page was
+loaded before the option was removed; that same person moving off the waiting
+list **without anyone acting**, because a cancellation shifted the ranks; and
+the form closing itself, a choice question being unable to hold zero options.
+
+**The walkthrough computes, it does not narrate.** It calls the same decision
+functions that drive your real form, against its own sheets — a demonstration
+that duplicated the logic would be correct the day it was written and wrong
+after the next change, silently. The test bench therefore checks that what it
+displays matches what a real synchronisation returns on the same data.
+
+It touches neither the form, nor the response sheet, nor the production sheets,
+so it is safe to run mid-campaign. **Créneaux > Retirer l'exemple** removes the
+three sheets and nothing else.
+
 ## Setup & installation
 
 ### Prerequisites
@@ -323,7 +376,7 @@ Only one occurrence appears (`FormApp.openByUrl` in `Formulaire.gs`), using the 
 node banc/test.js
 ```
 
-74 assertions outside Google's environment. Mock services replicate Google's constraints: rejecting empty choice questions, invalid type conversions, sheets without linked forms, or emails without recipients.
+101 assertions outside Google's environment. Mock services replicate Google's constraints: rejecting empty choice questions, invalid type conversions, sheets without linked forms, or emails without recipients.
 
 The test suite tests itself:
 
@@ -331,7 +384,7 @@ The test suite tests itself:
 node banc/epreuve.js
 ```
 
-It introduces **thirteen deliberate defects** into a project copy (bypassing option adoption, removing section-navigation refusal, blinding the reopening logic, applying margins to verdicts, skipping quota checks, opening forms by ID) and verifies that the bench fails on each. A test suite that remains green against regressions proves nothing.
+It introduces **seventeen deliberate defects** into a project copy (bypassing option adoption, removing section-navigation refusal, blinding the reopening logic, applying margins to verdicts, skipping quota checks, opening forms by ID) and verifies that the bench fails on each. A test suite that remains green against regressions proves nothing.
 
 Syntax checking across all merged files (detecting global scope conflicts):
 

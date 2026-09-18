@@ -25,7 +25,7 @@
  * retenues et celles en dépassement — c'est dit dans l'onglet d'aide.
  */
 
-const LIMITEUR_VERSION_ = '0.1.0';
+const LIMITEUR_VERSION_ = '0.3.0';
 
 const LIMITEUR_ONGLET_CRENEAUX_ = 'Créneaux';
 const LIMITEUR_ONGLET_JOURNAL_ = 'Journal';
@@ -158,8 +158,8 @@ const limiteurEntier_ = (valeur) => {
  * L'ordre des lignes est l'ordre d'affichage dans le formulaire : c'est la
  * seule chose qui permette de remettre une option retirée à sa place.
  */
-const limiteurLireReferentiel_ = (margeParDefaut = 0) => {
-  const table = SocleFeuilles.lireTable(LIMITEUR_ONGLET_CRENEAUX_);
+const limiteurLireReferentiel_ = (margeParDefaut = 0, onglet = LIMITEUR_ONGLET_CRENEAUX_) => {
+  const table = SocleFeuilles.lireTable(onglet);
   if (table.lignes.length === 0) return { table, creneaux: [] };
 
   SocleFeuilles.colonne(table, 'Créneau');

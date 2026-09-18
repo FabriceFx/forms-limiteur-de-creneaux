@@ -20,6 +20,9 @@ function onOpen() {
     .addItem('Recompter et mettre à jour le formulaire', 'synchroniserLesCreneaux')
     .addItem('Où en sont les créneaux ?', 'afficherLEtatDesCreneaux')
     .addSeparator()
+    .addItem('Voir un exemple', 'voirUnExemple')
+    .addItem('Retirer l’exemple', 'retirerLExemple')
+    .addSeparator()
     .addItem('Installer ou mettre à jour', 'installerLeLimiteur')
     .addItem('À propos', 'aProposDuLimiteur')
     .addToUi();
@@ -92,6 +95,53 @@ function installerLeLimiteur() {
     'L’onglet « Aide » explique le reste.',
   ];
   interface_.alert('Créneaux', lignes.join('\n'), interface_.ButtonSet.OK);
+}
+
+/**
+ * Monte un cas exemple et le déroule, sans toucher à rien.
+ *
+ * Trois onglets préfixés « Démo — », et aucun accès au formulaire ni à la
+ * feuille des réponses : la démonstration peut se lancer sur une campagne en
+ * cours sans que personne n'ait à retenir son souffle.
+ */
+function voirUnExemple() {
+  const interface_ = SpreadsheetApp.getUi();
+  const resultat = SocleExecution.sousVerrou(() => limiteurJouerLaDemonstration_());
+
+  if (!resultat.pris) {
+    interface_.alert('Créneaux', resultat.message, interface_.ButtonSet.OK);
+    return;
+  }
+  interface_.alert(`Un exemple, en ${resultat.valeur.etapes} étapes`,
+    [`L'onglet « ${LIMITEUR_ONGLET_DEMO_DEROULE_} » déroule un cas complet :`,
+      'trois créneaux, sept places, des inscriptions, une de trop, deux',
+      'annulations, puis la fermeture du formulaire.',
+      '',
+      'Lisez-le de haut en bas. La colonne « Pourquoi » explique chaque étape.',
+      '',
+      `Les chiffres ne sont pas écrits d'avance : ils sortent du même calcul que`,
+      `celui qui pilote votre vrai formulaire, appliqué aux onglets`,
+      `« ${LIMITEUR_PREFIXE_DEMO_.trim()} ».`,
+      '',
+      'Votre formulaire et vos réponses n’ont pas été touchés. « Retirer',
+      'l’exemple » efface les trois onglets.'].join('\n'),
+    interface_.ButtonSet.OK);
+}
+
+/** Efface les onglets de la démonstration, et eux seuls. */
+function retirerLExemple() {
+  const interface_ = SpreadsheetApp.getUi();
+  const resultat = SocleExecution.sousVerrou(() => limiteurRetirerLaDemonstration_());
+
+  if (!resultat.pris) {
+    interface_.alert('Créneaux', resultat.message, interface_.ButtonSet.OK);
+    return;
+  }
+  const { retires } = resultat.valeur;
+  interface_.alert('Créneaux', retires.length === 0
+    ? 'Aucun onglet d’exemple n’était présent : il n’y avait rien à retirer.'
+    : `${retires.length} onglet(s) retiré(s) : ${retires.join(', ')}.`,
+    interface_.ButtonSet.OK);
 }
 
 /** La version qui tourne vraiment — un déploiement sert une copie figée du code. */

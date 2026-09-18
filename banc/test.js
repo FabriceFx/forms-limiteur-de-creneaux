@@ -19,9 +19,9 @@ const RACINE = path.join(__dirname, '..');
 const DOSSIER = path.join(RACINE, 'apps-script');
 const FICHIERS = ['SocleDates.gs', 'SocleTexte.gs', 'SocleFeuilles.gs', 'SocleErreurs.gs',
   'SocleExecution.gs', 'SocleCourriel.gs', 'Limiteur.gs', 'Formulaire.gs',
-  'Synchronisation.gs', 'Installation.gs', 'Menu.gs'];
+  'Synchronisation.gs', 'Demonstration.gs', 'Installation.gs', 'Menu.gs'];
 
-const SECTIONS_ATTENDUES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const SECTIONS_ATTENDUES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'L', 'K'];
 
 let passes = 0;
 const echecs = [];
@@ -873,6 +873,185 @@ section('J. Ce qui part par courriel, et ce qui n’en part pas');
     + 'n’envoie rien — et ne casse pas pour autant');
   verifier(/sans adresse/.test(String(lignesDe(f, 'Journal').pop().Courriel)),
     'le journal nomme la cause, pour qu’on sache qu’il faut collecter les adresses');
+}
+
+section('L. La démonstration montre ce que l’outil fait vraiment');
+{
+  const DEMO = 'Démo — déroulé';
+  const AFFICHE = 'Le formulaire proposerait';
+  const DECIDE = 'Ce que l’outil décide';
+
+  const c = prepare_({
+    elements: [{
+      type: 'LIST',
+      titre: 'Créneau souhaité',
+      choix: ['Mardi 14 h', 'Jeudi 9 h', 'Vendredi 16 h'],
+    }],
+    capacites: [['Mardi 14 h', 2], ['Jeudi 9 h', 3], ['Vendredi 16 h', 2]],
+  });
+
+  const avant = Object.keys(c.feuilles).slice();
+  const choixAvant = c.elements[0].choix.map((x) => x.valeur);
+  const revisionsAvant = c.elements[0].revisions;
+
+  const joue = c.lire('limiteurJouerLaDemonstration_()');
+  const etapes = lignesDe(c, DEMO);
+
+  // Vérifié ici, et pas plus bas : les synchronisations de contrôle qui suivent
+  // modifient le formulaire à bon droit, et masqueraient une démonstration qui
+  // y aurait touché.
+  egal(c.elements[0].choix.map((x) => x.valeur), choixAvant,
+    'la démonstration ne touche pas au formulaire — elle peut donc se lancer sur '
+    + 'une campagne en cours');
+  egal(c.elements[0].revisions, revisionsAvant,
+    'elle n’en produit même aucune révision');
+  egal(joue.etapes, 6, 'la démonstration déroule six étapes');
+  egal(etapes.length, 6, 'et les écrit toutes dans son onglet');
+
+  egal(etapes[1][AFFICHE], 'Jeudi 9 h · Vendredi 16 h',
+    'étape 2 — les deux places du mardi sont prises, le mardi n’est plus proposé');
+
+  verifier(/Surréservation/.test(etapes[2][DECIDE]),
+    'étape 3 — Chloé avait la page ouverte : sa réponse est acceptée par Google, '
+    + 'et l’outil la classe en liste d’attente au lieu de la perdre');
+  verifier(/rang 3 pour 2 places/.test(etapes[2][DECIDE]),
+    'en disant le rang qui l’explique');
+
+  // Le point le plus difficile à croire sans le voir : personne n'agit, et
+  // pourtant Chloé change de sort. C'est le décalage des numéros de ligne.
+  verifier(/Chloé : Acceptée/.test(etapes[3][DECIDE]),
+    'étape 4 — Alice se décommande et Chloé prend sa place sans rien faire');
+  verifier(/rang 2 /.test(etapes[3][DECIDE]),
+    'son rang est passé de 3 à 2 : le rang suit l’ordre des lignes');
+  egal(etapes[3][AFFICHE], 'Jeudi 9 h · Vendredi 16 h',
+    'et le mardi reste complet, ses deux places étant toujours prises');
+
+  // L'option revient à sa place, pas à la fin : c'est le référentiel qui a
+  // gardé l'ordre, le formulaire l'avait oublié en même temps que le libellé.
+  egal(etapes[4][AFFICHE], 'Mardi 14 h · Jeudi 9 h · Vendredi 16 h',
+    'étape 5 — une seconde annulation fait revenir le mardi, en tête de liste');
+
+  verifier(/le formulaire se ferme/.test(etapes[5][AFFICHE]),
+    'étape 6 — plus une place : une question à choix ne peut pas rester vide, '
+    + 'donc c’est le formulaire qui se ferme');
+
+  // La promesse qui justifie tout le module : la démonstration passe par le
+  // vrai code. On la vérifie en faisant tourner la VRAIE synchronisation sur
+  // les mêmes données, et en comparant ce qu'elle affiche.
+  poserReponses_(c, ['Horodatage', 'Adresse e-mail', 'Créneau souhaité'], [
+    ['2026-09-18 09:05', 'alice@exemple.org', 'Mardi 14 h'],
+    ['2026-09-18 09:07', 'bruno@exemple.org', 'Mardi 14 h'],
+  ]);
+  const reel = c.lire('limiteurSynchroniser_()');
+  egal(reel.affiches.join(' · '), etapes[1][AFFICHE],
+    'la vraie synchronisation, sur les mêmes données, propose exactement ce que '
+    + 'l’étape 2 annonce — une démonstration qui recopierait la logique serait '
+    + 'juste le jour où on l’écrit et fausse à la modification suivante');
+
+  poserReponses_(c, ['Horodatage', 'Adresse e-mail', 'Créneau souhaité'], [
+    ['2026-09-18 09:12', 'chloe@exemple.org', 'Mardi 14 h'],
+    ['2026-09-18 09:20', 'diane@exemple.org', 'Mardi 14 h'],
+    ['2026-09-18 09:24', 'emile@exemple.org', 'Jeudi 9 h'],
+    ['2026-09-18 09:31', 'farid@exemple.org', 'Jeudi 9 h'],
+    ['2026-09-18 09:38', 'gaelle@exemple.org', 'Jeudi 9 h'],
+    ['2026-09-18 09:44', 'hugo@exemple.org', 'Vendredi 16 h'],
+    ['2026-09-18 09:51', 'ines@exemple.org', 'Vendredi 16 h'],
+  ]);
+  const complet = c.lire('limiteurSynchroniser_()');
+  egal(complet.affiches, [],
+    'et sur les sept inscriptions de l’étape 6, elle ne propose plus rien');
+  egal(c.formulaire.accepte, false, 'le vrai formulaire se ferme, comme annoncé');
+
+  // Une démonstration qui abîmerait une campagne en cours serait pire qu'absente.
+  const apres = Object.keys(c.feuilles);
+  egal(apres.filter((n) => !avant.includes(n)).sort(),
+    ['Démo — créneaux', 'Démo — déroulé', 'Démo — réponses'],
+    'elle n’ajoute que ses trois onglets préfixés');
+  const retrait = c.lire('limiteurRetirerLaDemonstration_()');
+  egal(retrait.retires.length, 3, 'le retrait efface les trois onglets');
+  egal(Object.keys(c.feuilles).sort(), avant.sort(),
+    'et rien d’autre : le classeur retrouve exactement ses onglets d’avant');
+  egal(c.lire('limiteurRetirerLaDemonstration_()').retires, [],
+    'le relancer sur un classeur sans exemple ne fait rien, et ne lève pas');
+}
+
+section('K. La documentation dit ce que le banc fait vraiment');
+{
+  // Ces chiffres vivent à quatre endroits — les deux versions du README, le
+  // CHANGELOG, et le banc lui-même — et rien ne les tenait ensemble. Un état
+  // dupliqué dérive à la première retouche : ajouter une assertion rendait
+  // trois textes faux, en silence. Un banc qui ment sur sa propre couverture
+  // ne vaut pas mieux qu'une version affichée et fausse.
+  const NOMBRES_ = {
+    fr: ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit',
+      'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize',
+      'dix-sept', 'dix-huit', 'dix-neuf', 'vingt'],
+    en: ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
+      'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
+      'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'],
+  };
+  const mot = (n, langue) => {
+    if (n >= NOMBRES_[langue].length) {
+      throw new Error(`Le banc ne sait écrire que jusqu'à vingt en « ${langue} », `
+        + `et l'épreuve porte ${n} défauts. Étendez NOMBRES_ dans banc/test.js, `
+        + 'ou écrivez le nombre en chiffres dans la documentation.');
+    }
+    return NOMBRES_[langue][n];
+  };
+
+  // Les blancs sont réduits avant toute recherche : un texte Markdown coupe
+  // ses lignes à quatre-vingts colonnes, et un contrôle qui casserait selon
+  // l'endroit où tombe la coupure enverrait chercher un défaut inexistant.
+  const aplatir = (texte) => texte.replace(/\s+/g, ' ');
+
+  const readme = aplatir(fs.readFileSync(path.join(RACINE, 'README.md'), 'utf8'));
+  // Le CHANGELOG garde des chiffres historiques : une entrée ancienne décrit
+  // ce qu'était cette version-là, et la « corriger » serait la falsifier. Seule
+  // l'entrée la plus récente parle de l'état courant, et c'est la seule qu'on
+  // tient — Keep a Changelog range la plus récente en premier.
+  const changelogEntier = fs.readFileSync(path.join(RACINE, 'CHANGELOG.md'), 'utf8');
+  const changelog = aplatir(`## ${changelogEntier.split(/^## /m)[1] || ''}`);
+  const epreuve = fs.readFileSync(path.join(__dirname, 'epreuve.js'), 'utf8');
+
+  // Le nombre de défauts se lit dans l'épreuve sans avoir à l'exécuter : elle
+  // recopie le projet treize fois, le banc doit rester instantané.
+  const defauts = (epreuve.match(/^ {2}\['/gm) || []).length;
+  verifier(defauts >= 10, `banc/epreuve.js porte ${defauts} défauts — en dessous de `
+    + 'dix, c’est la lecture du compte qui est cassée, pas le fichier');
+  verifier(readme.includes(`**${mot(defauts, 'fr')} défauts réels**`),
+    `le README français annonce « ${mot(defauts, 'fr')} défauts réels », autant que `
+    + 'banc/epreuve.js en porte');
+  verifier(readme.includes(`**${mot(defauts, 'en')} deliberate defects**`),
+    `le README anglais annonce « ${mot(defauts, 'en')} deliberate defects » — une `
+    + 'documentation bilingue dérive toujours d’un seul côté d’abord');
+  verifier(changelog.includes(`${mot(defauts, 'fr')} défauts`),
+    `le CHANGELOG annonce ${mot(defauts, 'fr')} défauts`);
+
+  const annonces = [...`${readme}\n${changelog}`.matchAll(/(\d+) assertions/g)]
+    .map((m) => Number(m[1]));
+  verifier(annonces.length >= 3,
+    `le nombre d’assertions est annoncé ${annonces.length} fois — on en attend au `
+    + 'moins trois (README français, README anglais, CHANGELOG), et une mention '
+    + 'supprimée serait un contrôle perdu sans que rien ne le dise');
+  egal([...new Set(annonces)], [annonces[0]],
+    'toutes les mentions donnent le même nombre');
+
+  // Le total ne peut pas être connu avant d'avoir fini de compter : cette
+  // assertion-ci se compte donc elle-même, et c'est le seul point fixe
+  // possible. Elle doit rester la dernière du banc.
+  //
+  // On la saute quand autre chose a déjà échoué : le total serait alors plus
+  // bas pour une raison qui n'a rien à voir, et le message enverrait corriger
+  // la documentation au lieu du défaut.
+  if (echecs.length > 0) {
+    console.log('  (total non vérifié : corrigez d’abord les échecs ci-dessus, '
+      + 'un banc en échec n’a pas de total significatif)');
+  } else {
+    const total = passes + 1;
+    verifier(annonces[0] === total,
+      `la documentation annonce ${annonces[0]} assertions et le banc en passe ${total} `
+      + '— reportez le bon nombre dans les deux README et le CHANGELOG');
+  }
 }
 
 // ---------------------------------------------------------------------------

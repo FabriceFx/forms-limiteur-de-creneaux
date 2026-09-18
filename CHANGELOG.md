@@ -3,6 +3,59 @@
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [0.3.0] - 2026-09-18
+
+Un cas exemple, pour qui découvre l'outil. **Toujours jamais installée en vrai.**
+
+### Ajouté
+
+- **Un cas exemple jouable** (menu *Voir un exemple*), qui déroule en six étapes
+  ce qu'aucun texte ne fait comprendre : une inscription acceptée au-delà de la
+  capacité, quelqu'un qui quitte la liste d'attente sans que personne n'agisse,
+  et le formulaire qui se ferme de lui-même.
+- **Il calcule au lieu de raconter** : la démonstration appelle les mêmes
+  fonctions de décision que la vraie synchronisation, sur ses propres onglets.
+  Le banc vérifie que ce qu'elle affiche est bien ce que la synchronisation rend
+  sur les mêmes données — sans quoi elle serait juste le jour de son écriture et
+  fausse à la modification suivante, sans que rien ne le signale.
+- **Elle ne touche à rien** : trois onglets préfixés « Démo — », aucun accès au
+  formulaire ni à la feuille des réponses, donc lançable sur une campagne en
+  cours. *Retirer l'exemple* efface ces trois onglets, et le banc vérifie qu'il
+  n'en efface pas un de plus.
+
+### Modifié
+
+- `limiteurLireReferentiel_` accepte le nom de l'onglet à lire, pour que la
+  démonstration passe par le vrai code plutôt que par une copie.
+- Le banc passe de 81 à **101 assertions**, l'épreuve de quinze à **dix-sept
+  défauts**.
+
+## [0.2.0] - 2026-09-18
+
+Outillage seul : **aucun changement de comportement** dans Apps Script, le code
+des onglets et du formulaire est identique à la 0.1.0. Toujours **jamais
+installée en vrai**.
+
+### Ajouté
+
+- **Le banc vérifie ses propres chiffres** (section K). Le nombre d'assertions
+  et le nombre de défauts de l'épreuve vivaient à quatre endroits — les deux
+  versions du README, le CHANGELOG et le banc — sans que rien ne les tienne
+  ensemble : ajouter une assertion rendait trois textes faux, en silence. Le
+  contrôle du total se compte lui-même, faute de pouvoir connaître le total
+  avant d'avoir fini de compter.
+- **L'épreuve porte sur tout le projet**, et non plus sur `apps-script/` seul :
+  ses deux derniers défauts sont dans la documentation, qui est désormais tenue
+  au même titre que le code.
+
+### Modifié
+
+- Le banc passe de 74 à **101 assertions**, l'épreuve de treize à **quinze
+  défauts**.
+- Du CHANGELOG, le banc ne lit que l'entrée la plus récente : une entrée ancienne
+  dit ce qu'était cette version-là, et l'aligner sur l'état courant reviendrait à
+  la falsifier.
+
 ## [0.1.0] - 2026-09-18
 
 Première version. Éprouvée au banc, **jamais installée en vrai**.
