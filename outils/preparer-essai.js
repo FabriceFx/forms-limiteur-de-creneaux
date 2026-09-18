@@ -15,10 +15,11 @@
 //   - **les fichiers sont à plat.** clasp transforme un sous-dossier en préfixe
 //     de nom : `outils/Controle.gs` deviendrait le fichier `outils/Controle`
 //     dans l'éditeur ;
-//   - **le manifeste d'essai demande une portée de plus**, `drive.file`, pour
-//     que le contrôle puisse jeter les formulaires qu'il crée. Elle ne donne
-//     accès qu'aux fichiers créés par ce script, et elle n'entre pas dans le
-//     manifeste du produit.
+//   - **le manifeste d'essai demande exactement les portées du produit.** Une
+//     première version y ajoutait `drive.file` pour jeter les formulaires du
+//     contrôle : `DriveApp` exige en réalité la portée `drive` entière, et
+//     réclamer l'accès au Drive complet pour un outil d'essai serait hors de
+//     proportion. Le contrôle rend les liens, vous jetez d'un clic.
 
 const fs = require('fs');
 const vm = require('vm');
@@ -42,9 +43,6 @@ const MANIFESTE = {
     'https://www.googleapis.com/auth/script.container.ui',
     'https://www.googleapis.com/auth/script.send_mail',
     'https://www.googleapis.com/auth/userinfo.email',
-    // Propre à l'essai : jeter les formulaires que le contrôle crée. Restreinte
-    // aux fichiers créés par ce script, elle ne donne pas accès au Drive.
-    'https://www.googleapis.com/auth/drive.file',
   ],
 };
 
@@ -172,7 +170,13 @@ jamais été vérifiées ailleurs que dans la documentation de Google :
   preuve** : un déclencheur lent ressemble à un déclencheur qui n'a pas vu la
   ligne.
 
-Le contrôle jette les formulaires qu'il crée et n'envoie aucun courriel.
+Le contrôle n'envoie aucun courriel. Il ne supprime pas les formulaires qu'il
+crée — \`DriveApp\` exige la portée \`drive\` entière, hors de proportion pour un
+essai — mais il en donne les liens en fin de rapport.
+
+**Lancez \`preparerLeFormulaireDEssai\` avant le contrôle.** Sans formulaire lié,
+le classeur ne reçoit aucune réponse et le contrôle du déclencheur ne peut pas
+avoir lieu ; il le dira, en toutes lettres.
 
 ## Après l'essai
 

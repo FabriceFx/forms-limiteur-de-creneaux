@@ -25,7 +25,7 @@
  * retenues et celles en dépassement — c'est dit dans l'onglet d'aide.
  */
 
-const LIMITEUR_VERSION_ = '0.7.0';
+const LIMITEUR_VERSION_ = '0.7.1';
 
 const LIMITEUR_ONGLET_CRENEAUX_ = 'Créneaux';
 const LIMITEUR_ONGLET_JOURNAL_ = 'Journal';

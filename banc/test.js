@@ -530,6 +530,34 @@ section('A. Intégrité du projet');
   }
 
 
+  // `controleCas_` est la seule partie de `outils/Controle.gs` qui se teste hors
+  // de Google — et c'est précisément celle qui s'est trompée au premier essai
+  // réel, en rapportant « DÉMENTI » pour une mesure qui n'avait pas eu lieu.
+  {
+    const bac = {
+      JSON, Math, Number, String, Object, Array, Boolean, RegExp, Error,
+      console: { log: () => {}, warn: () => {}, error: () => {} },
+    };
+    bac.globalThis = bac;
+    vm.createContext(bac);
+    vm.runInContext(
+      fs.readFileSync(path.join(RACINE, 'outils', 'Controle.gs'), 'utf8'), bac,
+      { filename: 'Controle.gs' });
+
+    // Une `const` de portée globale n'est pas une propriété de l'objet global :
+    // on la relit par son nom, jamais par `globalThis[…]`.
+    const cas = vm.runInContext('controleCas_', bac);
+
+    egal(cas('x', true, () => true).etat, 'CONFIRMÉ',
+      'une mesure conforme à l’attente est confirmée');
+    egal(cas('x', true, () => false).etat, 'DÉMENTI',
+      'une mesure qui contredit l’attente la dément');
+    egal(cas('x', true, () => { throw new Error('boum'); }).etat, 'NON MESURÉ',
+      'une mesure qui lève n’est PAS un démenti : elle n’a pas eu lieu, et le '
+      + 'dire est le seul rapport honnête — la confondre avec un démenti a fait '
+      + 'croire une fois que Google avait répondu quand il avait refusé');
+  }
+
   // `outils/Controle.gs` ne tourne que dans Google : aucun test ne le charge,
   // et sa syntaxe seule est vérifiée par le préparateur. Mais il appelle des
   // fonctions internes du produit, et en renommer une le casserait sans que

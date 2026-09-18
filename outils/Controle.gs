@@ -20,31 +20,43 @@
  * à la corbeille, et il n'envoie aucun courriel.
  */
 
-const CONTROLE_VERSION_ = '0.7.0';
+const CONTROLE_VERSION_ = '0.7.1';
 
-/** Un cas : son nom, ce qu'on croyait, ce que Google répond. */
+/**
+ * Un cas : son nom, ce qu'on croyait, ce que Google répond.
+ *
+ * **Trois états, et la distinction est tout l'intérêt.** Une exception n'est pas
+ * un démenti : c'est une mesure qui n'a pas eu lieu. La première version les
+ * confondait, et a rapporté « DÉMENTI » pour l'hypothèse la plus importante du
+ * projet alors qu'elle n'avait rien mesuré — la faute même que le diagnostic du
+ * produit refuse depuis la 0.4.0, retournée contre son auteur.
+ */
 const controleCas_ = (nom, attendu, mesure) => {
   try {
     const obtenu = mesure();
     const accord = JSON.stringify(obtenu) === JSON.stringify(attendu);
     return { nom, attendu, obtenu, etat: accord ? 'CONFIRMÉ' : 'DÉMENTI' };
   } catch (erreur) {
-    return { nom, attendu, obtenu: `exception : ${erreur.message}`, etat: 'DÉMENTI' };
+    return {
+      nom,
+      attendu,
+      obtenu: String(erreur.message || erreur),
+      etat: 'NON MESURÉ',
+    };
   }
 };
 
-/** Met à la corbeille ce que le contrôle a créé, et ne se plaint pas si Drive refuse. */
-const controleJeter_ = (identifiants) => {
-  const restes = [];
-  identifiants.forEach((id) => {
-    try {
-      DriveApp.getFileById(id).setTrashed(true);
-    } catch (erreur) {
-      restes.push(id);
-    }
-  });
-  return restes;
-};
+/**
+ * Les liens des formulaires créés, pour que vous les jetiez d'un clic.
+ *
+ * **Le contrôle ne les supprime pas lui-même.** `DriveApp` exige la portée
+ * `drive` entière — `drive.file` ne lui suffit pas, ce qu'un premier essai a
+ * appris en se faisant refuser quatre suppressions. Réclamer l'accès au Drive
+ * complet pour un outil d'essai serait hors de proportion avec le service rendu :
+ * quatre liens et un clic coûtent moins cher qu'une portée de trop.
+ */
+const controleLiens_ = (identifiants) => identifiants
+  .map((id) => `https://docs.google.com/forms/d/${id}/edit`);
 
 /**
  * L'hypothèse qui porte le plus de code : reposer les choix efface-t-il la
@@ -58,8 +70,12 @@ const controleNavigation_ = (aJeter) => {
   const formulaire = FormApp.create('Limiteur — contrôle navigation');
   aJeter.push(formulaire.getId());
 
-  const page = formulaire.addPageBreakItem().setTitle('Seconde page');
+  // La question AVANT le saut de page : posée après, elle se trouverait sur la
+  // seconde page et naviguerait vers elle-même. Google répond « Invalid data
+  // updating form. », et la première version du contrôle a pris ce refus pour
+  // une réponse à la question posée.
   const question = formulaire.addMultipleChoiceItem().setTitle('Créneau');
+  const page = formulaire.addPageBreakItem().setTitle('Seconde page');
   question.setChoices([
     question.createChoice('Avec saut', page),
     question.createChoice('Sans saut'),
@@ -214,20 +230,31 @@ function controlerEnConditionsReelles() {
 
   // --- Le déclencheur, qui demande une vraie soumission --------------------
 
-  const declencheur = SocleErreurs.absorber('contrôle du déclencheur',
-    () => controleDeclencheur_(15 * 1000), { possible: false, raison: 'le contrôle a échoué' });
+  // Pas d'`absorber` ici : il compte l'échec mais en perd la cause, et « le
+  // contrôle a échoué » n'apprend rien à qui le lit.
+  let declencheur;
+  try {
+    declencheur = controleDeclencheur_(15 * 1000);
+  } catch (erreur) {
+    declencheur = { possible: false, raison: String(erreur.message || erreur) };
+  }
 
   // --- Rapport --------------------------------------------------------------
 
-  const restes = controleJeter_(aJeter);
+  const liens = controleLiens_(aJeter);
   const dementis = cas.filter((un) => un.etat === 'DÉMENTI');
+  const nonMesures = cas.filter((un) => un.etat === 'NON MESURÉ');
 
   const lignes = [`Contrôle en conditions réelles — limiteur ${LIMITEUR_VERSION_}, `
     + `contrôle ${CONTROLE_VERSION_}`, ''];
   cas.forEach((un) => {
     lignes.push(`[${un.etat}] ${un.nom}`);
     if (un.etat === 'DÉMENTI') {
-      lignes.push(`    attendu ${JSON.stringify(un.attendu)}, obtenu ${JSON.stringify(un.obtenu)}`);
+      lignes.push(`    attendu ${JSON.stringify(un.attendu)}, `
+        + `obtenu ${JSON.stringify(un.obtenu)}`);
+    }
+    if (un.etat === 'NON MESURÉ') {
+      lignes.push(`    rien n’a été mesuré — ${un.obtenu}`);
     }
   });
 
@@ -243,9 +270,14 @@ function controlerEnConditionsReelles() {
     lignes.push('    déclencheur qui n’a pas vu la ligne.');
   }
 
-  lignes.push('', `${cas.length - dementis.length} confirmé(s), ${dementis.length} démenti(s).`);
-  if (restes.length > 0) {
-    lignes.push('', `À jeter à la main (Drive a refusé) : ${restes.join(', ')}.`);
+  lignes.push('', `${cas.length - dementis.length - nonMesures.length} confirmé(s), `
+    + `${dementis.length} démenti(s), ${nonMesures.length} non mesuré(s).`);
+  if (nonMesures.length > 0) {
+    lignes.push('Un point non mesuré n’est ni confirmé ni démenti : on ne sait rien.');
+  }
+  if (liens.length > 0) {
+    lignes.push('', `${liens.length} formulaire(s) créés par ce contrôle, à jeter :`);
+    liens.forEach((un) => lignes.push(`    ${un}`));
   }
   lignes.push('', 'L’onglet « Contrôle — bac » peut être supprimé.');
 

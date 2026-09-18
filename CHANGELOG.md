@@ -3,6 +3,48 @@
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [0.7.1] - 2026-09-18
+
+**Premier lancement réel dans Apps Script**, et il a trouvé quatre défauts — tous
+dans le contrôle, aucun dans le produit. Le produit lui-même n'a toujours pas été
+essayé à la main.
+
+### Corrigé
+
+- **Une exception n'est plus prise pour un démenti.** Le contrôle rapportait
+  « DÉMENTI » pour l'hypothèse la plus importante du projet alors qu'il n'avait
+  rien mesuré : l'appel avait levé. Trois états désormais — confirmé, démenti,
+  **non mesuré** —, soit exactement la distinction que le diagnostic du produit
+  impose depuis la 0.4.0, et que son auteur avait oubliée dans son propre outil.
+- **Le contrôle de la navigation par section créait un formulaire invalide.** La
+  question était posée après le saut de page, donc sur la seconde page, et
+  naviguait vers elle-même ; Google répond « Invalid data updating form. »
+  L'hypothèse reste **non vérifiée** : c'est le prochain essai qui la tranchera.
+- **L'échec du contrôle du déclencheur disait « le contrôle a échoué »** sans
+  dire pourquoi — `SocleErreurs.absorber` compte la cause mais en perd le
+  message. Il remonte désormais en toutes lettres.
+- **Le contrôle ne supprime plus les formulaires qu'il crée.** `DriveApp` exige
+  la portée `drive` entière ; `drive.file` ne lui suffit pas, ce qu'un premier
+  essai a appris en se faisant refuser quatre suppressions. Réclamer l'accès au
+  Drive complet pour un outil d'essai serait hors de proportion : le rapport
+  donne les liens, et l'on jette d'un clic.
+
+### Confirmé en conditions réelles
+
+Huit hypothèses tenaient, dont trois que le banc ne faisait que simuler : **une
+chaîne ISO écrite en cellule ressort bien en objet `Date`** — l'hypothèse
+fondatrice de `SocleDates` —, **une question à choix refuse une liste vide**, et
+**`getFormUrl()` rend `null`** sur une feuille non liée. Le fuseau du script
+valait celui du classeur, ce qui n'allait pas de soi.
+
+### Modifié
+
+- Le manifeste d'essai demande exactement les portées du produit, `drive.file`
+  en moins.
+- **`controleCas_` est désormais éprouvée au banc** : c’est la seule partie du
+  contrôle qui se teste hors de Google, et c’est celle qui s’était trompée. Le
+  banc passe à **190 assertions**, l’épreuve à **trente-cinq défauts**.
+
 ## [0.7.0] - 2026-09-18
 
 De quoi enfin essayer pour de vrai. **Toujours jamais installée en vrai** — mais
@@ -44,7 +86,7 @@ plus par manque d'outillage.
   déclaré** : ce fichier ne tourne que dans Google, et renommer une fonction le
   casserait sans que rien ne le dise — jusqu'à l'essai réel, c'est-à-dire au
   pire moment.
-- Le banc passe de 186 à **187 assertions**, l'épreuve de trente-trois à
+- Le banc passe de 186 à **190 assertions**, l'épreuve de trente-trois à
   **trente-quatre défauts**.
 
 ## [0.6.0] - 2026-09-18
@@ -89,7 +131,7 @@ Couleurs et notes. **Toujours jamais installée en vrai.**
 
 ### Modifié
 
-- Le banc passe de 166 à **187 assertions**, l'épreuve de vingt-neuf à
+- Le banc passe de 166 à **190 assertions**, l'épreuve de vingt-neuf à
   **trente-trois défauts**.
 
 ## [0.5.0] - 2026-09-18
@@ -125,7 +167,7 @@ Les listes par créneau. **Toujours jamais installée en vrai.**
 
 ### Modifié
 
-- Le banc passe de 149 à **187 assertions**, l'épreuve de vingt-cinq à
+- Le banc passe de 149 à **190 assertions**, l'épreuve de vingt-cinq à
   **vingt-neuf défauts**. La table des nombres du contrôle K va désormais
   jusqu'à quarante, pour cesser de l'étendre à chaque ajout.
 
@@ -165,7 +207,7 @@ Un diagnostic d'installation. **Toujours jamais installée en vrai.**
 
 ### Modifié
 
-- Le banc passe de 119 à **187 assertions**, l'épreuve de vingt et un à
+- Le banc passe de 119 à **190 assertions**, l'épreuve de vingt et un à
   **vingt-cinq défauts**.
 
 ## [0.3.1] - 2026-09-18
@@ -205,7 +247,7 @@ installée en vrai.**
 
 ### Modifié
 
-- Le banc passe de 101 à **187 assertions**, l'épreuve de dix-sept à **vingt et
+- Le banc passe de 101 à **190 assertions**, l'épreuve de dix-sept à **vingt et
   un défauts**. Le faux classeur sait désormais refuser une écriture sur un
   onglet protégé, ce que le vrai fait et qu'il ne savait pas simuler.
 
@@ -233,7 +275,7 @@ Un cas exemple, pour qui découvre l'outil. **Toujours jamais installée en vrai
 
 - `limiteurLireReferentiel_` accepte le nom de l'onglet à lire, pour que la
   démonstration passe par le vrai code plutôt que par une copie.
-- Le banc passe de 81 à **187 assertions**, l'épreuve de quinze à **dix-sept
+- Le banc passe de 81 à **190 assertions**, l'épreuve de quinze à **dix-sept
   défauts**.
 
 ## [0.2.0] - 2026-09-18
@@ -256,7 +298,7 @@ installée en vrai**.
 
 ### Modifié
 
-- Le banc passe de 74 à **187 assertions**, l'épreuve de treize à **quinze
+- Le banc passe de 74 à **190 assertions**, l'épreuve de treize à **quinze
   défauts**.
 - Du CHANGELOG, le banc ne lit que l'entrée la plus récente : une entrée ancienne
   dit ce qu'était cette version-là, et l'aligner sur l'état courant reviendrait à

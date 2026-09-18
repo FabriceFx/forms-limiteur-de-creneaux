@@ -323,7 +323,7 @@ tient pas à ma parole.
 node banc/test.js
 ```
 
-187 assertions, hors de Google. Les faux services refusent ce que les vrais
+190 assertions, hors de Google. Les faux services refusent ce que les vrais
 refusent : une question à choix sans aucune option, une conversion de type
 impossible, une feuille liée à aucun formulaire, un envoi sans destinataire.
 
@@ -333,7 +333,7 @@ Le banc s'éprouve lui-même :
 node banc/epreuve.js
 ```
 
-Il réintroduit **trente-quatre défauts réels** dans une copie du projet — l'adoption des
+Il réintroduit **trente-cinq défauts réels** dans une copie du projet — l'adoption des
 options nouvelles supprimée, le refus de la navigation par section levé, la
 réouverture rendue aveugle, la marge appliquée au verdict, le quota d'envoi plus
 lu, un formulaire ouvert par identifiant — et vérifie que le banc échoue sur
@@ -651,7 +651,7 @@ Only one occurrence appears (`FormApp.openByUrl` in `Formulaire.gs`), using the 
 node banc/test.js
 ```
 
-187 assertions outside Google's environment. Mock services replicate Google's constraints: rejecting empty choice questions, invalid type conversions, sheets without linked forms, or emails without recipients.
+190 assertions outside Google's environment. Mock services replicate Google's constraints: rejecting empty choice questions, invalid type conversions, sheets without linked forms, or emails without recipients.
 
 The test suite tests itself:
 
@@ -659,7 +659,7 @@ The test suite tests itself:
 node banc/epreuve.js
 ```
 
-It introduces **thirty-four deliberate defects** into a project copy (bypassing option adoption, removing section-navigation refusal, blinding the reopening logic, applying margins to verdicts, skipping quota checks, opening forms by ID) and verifies that the bench fails on each. A test suite that remains green against regressions proves nothing.
+It introduces **thirty-five deliberate defects** into a project copy (bypassing option adoption, removing section-navigation refusal, blinding the reopening logic, applying margins to verdicts, skipping quota checks, opening forms by ID) and verifies that the bench fails on each. A test suite that remains green against regressions proves nothing.
 
 Syntax checking across all merged files (detecting global scope conflicts):
 
